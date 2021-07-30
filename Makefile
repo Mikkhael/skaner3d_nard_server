@@ -1,34 +1,42 @@
 ### MAIN SETUP ###################################################
 
+#Try to include the parent Nard makefile
 -include ../../Rules.mk
 
 # Name of the output app
-TARGET_NAME = skanner3d_nard_server
-ifdef ($(PKG_NAME))
+# if Rules.mk was included, PKG_NAME will be defined
+ifneq ($(PKG_NAME),)
 	TARGET_NAME := $(PKG_NAME)
+else
+	TARGET_NAME := skanner3d_nard_server
 endif
 
 # Names of used directories
 BUILD_DIR   = build
-SOURCE_DIR	= src
+SOURCE_DIR  = src
 INCLUDE_DIR = include
 
 # Additional includes for compilation
 INCLUDES = 
 
-INCLUDES += $(BOOSTDIR)
+ifeq ($(OS), Windows_NT)
+	INCLUDES += $(BOOSTDIR)
+else
+#	Boost has to be in an isolated directory
+	INCLUDES += /usr/include/boostdir
+endif
 
 # Additional defines for compilation
-DEFINES  = 
+DEFINES  = BOOST_ERROR_CODE_HEADER_ONLY
 
 # Additional flags for compilation and linking
-CXXFLAGS = -std=c++2a -Wall -Wpedantic
+CXXFLAGS = -std=c++17 -Wall -Wpedantic
 LDFLAGS  = 
 
 ifeq ($(OS), Windows_NT)
 	LDFLAGS  += -lws2_32 -lwsock32
 else
-	LDFLAGS  += -lboost_system -lboost_thread -lpthread -L/usr/lib/ -lstdc++fs
+	LDFLAGS  += -L/usr/lib/ -lpthread -lstdc++fs
 endif
 
 # If 1, every cpp file inside SOURCE_DIR will be compiled
@@ -42,14 +50,14 @@ APPEND_EXE_ON_WINDOWS = 1
 ### MODES ########################################################
 
 # List of all modes
-MODES_LIST = debug release
+MODES_LIST = debug nard
 
 # Default mode
 MODE ?= debug
-
-ifdef ($(PKG_NAME))
+ifneq ($(PKG_NAME),)
 	MODE = nard
 endif
+
 # Modifiable procedures
 
 ifeq ($(MODE), debug)
@@ -59,8 +67,8 @@ endif
 ifeq ($(MODE), nard)
 	DEFINES  += RELEASE
 	DEFINES  += NARD
-	CXXFLAGS += -s -O2
 	CXXFLAGS += $(CROSS_CFLAGS)
+	CXXFLAGS += -fno-reorder-blocks -fno-reorder-blocks-and-partition
 endif
 
 
@@ -90,8 +98,7 @@ endif
 MKDIR = mkdir -p $(call P, $(1))
 RMDIR = rm -rf $(call P, $(1))
 CPDIR = cpdir $(call P, $(1)) $(call P, $(2))
-CPDIR_TREE = 
-IF_NOT_EXISTS = 
+CPDIR_TREE = mkdir -p $(call P, $(2)) ; rsync -av -f"+ */" -f"- *" $(call P, $(1)) $(call P, $(2)) > /dev/null
 PIPE = |
 ifeq ($(OS), Windows_NT)
 	IF_NOT_EXISTS = if not exist $(1) $(2)
@@ -139,8 +146,8 @@ endif
 all: setup build
 
 setup:
-	@$(call CPDIR_TREE, $(SOURCE_DIR)/ $(OBJECTS_DIR)/)
-	@$(call CPDIR_TREE, $(SOURCE_DIR)/ $(DEPEND_DIR)/)
+	@$(call CPDIR_TREE, $(SOURCE_DIR)/, $(OBJECTS_DIR)/)
+	@$(call CPDIR_TREE, $(SOURCE_DIR)/, $(DEPEND_DIR)/)
 	@$(call MKDIR, $(BIN_DIR))
 	
 
@@ -148,10 +155,12 @@ clean:
 	@$(call RMDIR, $(BUILD_DIR))
 	@$(call RMDIR, $(OBJECTS_DIR))
 	@$(call RMDIR, $(DEPEND_DIR))
+	$(std-clean)
 	
 distclean:
 	@$(call RMDIR, $(OBJECTS_DIR))
 	@$(call RMDIR, $(DEPEND_DIR))
+	$(std-distclean)
 
 run:
 	$(call P, $(TARGET))
@@ -159,22 +168,20 @@ run:
 INCLUDE_PARAMS = -I$(INCLUDE_DIR) $(INCLUDES:%=-I%)
 DEFINE_PARAMS  = $(DEFINES:%=-D%)
 
-ifdef ($(PKG_NAME))
+#Main compilation settings for Nard
+
+ifneq ($(PKG_NAME),)
 
 COMPILER := "$(PATH_CROSS_CC)gcc"
 LDFLAGS += -lstdc++
-clean:
-	$(std-clean)
-distclean:
-	$(std-distclean)
-	
-build: $(TARGET) install
-install: $(TARGET)
-	install -m 0755 -d "$(dir $@)"
-	install -m 0755 $(PKG_NAME) "$@"
-	touch "$@"
 
-$(TARGET): Makefile
+INSTALL_TARGET = $(PATH_FS)/usr/bin/$(PKG_NAME)
+
+build: $(TARGET) $(INSTALL_TARGET)
+$(INSTALL_TARGET): $(TARGET)
+	install -m 0755 -d "$(dir $@)"
+	install -m 0755 $(TARGET) "$@"
+	touch "$@"
 
 else
 
