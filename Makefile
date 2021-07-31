@@ -7,6 +7,7 @@
 # if Rules.mk was included, PKG_NAME will be defined
 ifneq ($(PKG_NAME),)
 	TARGET_NAME := $(PKG_NAME)
+	MODE = nard
 else
 	TARGET_NAME := skanner3d_nard_server
 endif
@@ -54,9 +55,6 @@ MODES_LIST = debug nard
 
 # Default mode
 MODE ?= debug
-ifneq ($(PKG_NAME),)
-	MODE = nard
-endif
 
 # Modifiable procedures
 
@@ -141,7 +139,7 @@ endif
 
 ### Make targets #################################################
 
-.PHONY: all setup build clean distclean install run $(MODES_LIST:%=.mode_%_prebuild) $(MODES_LIST:%=.mode_%_postbuild)
+.PHONY: all setup build clean distclean install run onlyrun $(MODES_LIST:%=.mode_%_prebuild) $(MODES_LIST:%=.mode_%_postbuild)
 
 all: setup build
 
@@ -162,15 +160,18 @@ distclean:
 	@$(call RMDIR, $(DEPEND_DIR))
 	$(std-distclean)
 
-run:
-	$(call P, $(TARGET))
+onlyrun:
+	$(call P, $(TARGET)) $(PARAMS)
+	
+run: build
+	$(call P, $(TARGET)) $(PARAMS)
 
 INCLUDE_PARAMS = -I$(INCLUDE_DIR) $(INCLUDES:%=-I%)
 DEFINE_PARAMS  = $(DEFINES:%=-D%)
 
 #Main compilation settings for Nard
 
-ifneq ($(PKG_NAME),)
+ifeq ($(MODE),nard)
 
 COMPILER := "$(PATH_CROSS_CC)gcc"
 LDFLAGS += -lstdc++
