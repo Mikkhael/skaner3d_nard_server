@@ -1,10 +1,10 @@
-#include <asiolib/all.hpp>
 #include <chrono>
 #include <iostream>
 #include <vector>
 #include <thread>
 
 #include <config.hpp>
+#include <udp_diag.hpp>
 
 int main(const int argc, const char** argv)
 {
@@ -13,6 +13,8 @@ int main(const int argc, const char** argv)
     
     asio::io_context ioContext;
     asio::steady_timer timer(ioContext);
+    
+    ioContext.stop();
     
     // Config
     
@@ -44,7 +46,18 @@ int main(const int argc, const char** argv)
     std::vector<std::thread> threadpool;
     threadpool.reserve(additionalThreads);
     
+    
+    // Servers
+    
+    if(!udpDiagService.start(ioContext, 1234)){
+        logger.logErrorLine("Cannot start UDP DIAG Server: ", udpDiagService.getError().message());
+        return -1;
+    }
+    logger.logInfoLine("Started UDP DIAG Server");
+    
     // Running ioContext
+    
+    ioContext.restart();
     
     for(int i=0; i<additionalThreads; i++){
         threadpool.emplace_back([&ioContext, i]{
