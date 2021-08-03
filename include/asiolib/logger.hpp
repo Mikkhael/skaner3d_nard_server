@@ -6,6 +6,9 @@
 #include <fstream>
 #include <mutex>
 
+#include <ctime>
+#include <iomanip>
+
 #ifdef DEBUG
     #include <iostream>
 #endif
@@ -51,7 +54,11 @@ class Logger
     
 public:
     
-	auto getTimestamp() { return std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count(); }
+	auto getTimestamp() { 
+        const auto time_now = std::time(nullptr);
+        return std::put_time(std::localtime(&time_now), "%d.%m.%Y %H:%M:%S");
+        //return time_now;
+    }
     
     auto& getIoContext() const { return *ioContextPtr; }
     auto& getIoStrand() const {return *ioStrand; }
