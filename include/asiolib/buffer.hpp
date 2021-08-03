@@ -21,6 +21,7 @@ template <size_t BufferSize>
 class ArrayBuffer
 {
 	std::array<char, BufferSize> buffer {};
+	size_t carret = 0;
     
 	template<size_t TotalSizeAcc, typename T, typename ...Ts>
 	size_t loadMultiple_impl(const size_t offset, T& object, Ts&... rest)
@@ -35,12 +36,12 @@ class ArrayBuffer
 	}
 	
 	template<size_t TotalSizeAcc, typename T, typename ...Ts>
-	size_t saveMultiple_impl(const size_t offset, T& object, Ts&... rest)
+	size_t saveMultiple_impl(const size_t offset, const T& object, const Ts&... rest)
 	{
 		return saveMultiple_impl<TotalSizeAcc + sizeof(T)>( saveObjectAt(offset, object), rest... );
 	}
 	template<size_t TotalSizeAcc, typename T>
-	size_t saveMultiple_impl(const size_t offset, T& object)
+	size_t saveMultiple_impl(const size_t offset, const T& object)
 	{
 		static_assert(TotalSizeAcc <= BufferSize);
 		return saveObjectAt(offset, object);
@@ -124,7 +125,7 @@ public:
 		return saveBytesAt(offset, (char*)&object, sizeof(T));
 	}
 	template <typename ...Ts>
-	size_t saveMultiple(Ts&... ts)
+	size_t saveMultiple(const Ts&... ts)
 	{
 		return saveMultiple_impl<0>(0, ts...);
 	}
@@ -133,5 +134,41 @@ public:
 	{
 		return saveMultiple_impl<0>(offset, ts...);
 	}
+	
+	////// Carret
+	
+	void resetCarret() {carret = 0;}
+	void setCarret(const size_t newCarret) {carret = newCarret;}
+	
+	auto getFromCarret(const size_t length){
+		return getAt(carret, length);
+	}
+	auto getToCarret(){
+		return get(carret);
+	}
+	
+	auto loadBytesCarret(char* to, size_t length){
+		return carret = loadBytesAt(carret, to, length);
+	}
+	void saveBytesCarret(const char* from, size_t length){
+		return carret = saveBytesAt(carret, from, length);
+	}
+	template<typename T>
+	auto loadObjectCarret(T& object){
+		return carret = loadObjectAt(carret, object);
+	}
+	template <typename ...Ts>
+	auto loadMultipleCarret(Ts&... ts){
+		return carret = loadMultipleAt(carret, ts...);
+	}
+	template<typename T>
+	auto saveObjectCarret(const T& object){
+		return carret = saveObjectAt(carret, object);
+	}
+	template <typename ...Ts>
+	auto saveMultipleCarret(const Ts&... ts){
+		return carret = saveMultipleAt(carret, ts...);
+	}
+	
 };
 

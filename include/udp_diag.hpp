@@ -33,8 +33,10 @@ public:
     void handle(const size_t bytesTransfered){
         this->bytesTransfered = bytesTransfered;
         
+        buffer.resetCarret();
+        
         DatagramId id;
-        buffer.loadObject(id);
+        buffer.loadObjectCarret(id);
         logInfoLine("Received datagram | id :", int(id), " | bytesTransfered: ", bytesTransfered);
         
         switch(id){
