@@ -1,3 +1,4 @@
+#pragma once
 #include <cinttypes>
 
 using DatagramId = int8_t;
@@ -33,3 +34,17 @@ namespace Diag{
     }
 }
 
+namespace Trans{
+    namespace Echo{
+         struct Request{
+            static constexpr DatagramId Id = 12;
+            uint32_t length;
+            // char[] message
+        };
+        struct Response{
+            static constexpr DatagramId Id = 13;
+            uint32_t length;
+            // char[] message
+        };
+    }
+}

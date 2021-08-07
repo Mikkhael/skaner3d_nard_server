@@ -36,6 +36,7 @@ LDFLAGS  =
 
 ifeq ($(OS), Windows_NT)
 	LDFLAGS  += -lws2_32 -lwsock32
+	DEFINES  += WINDOWS
 else
 	LDFLAGS  += -L/usr/lib/ -lpthread -lstdc++fs
 endif
@@ -51,7 +52,7 @@ APPEND_EXE_ON_WINDOWS = 1
 ### MODES ########################################################
 
 # List of all modes
-MODES_LIST = debug nard
+MODES_LIST = debug nard debug_client
 
 # Default mode
 MODE ?= debug
@@ -60,11 +61,18 @@ MODE ?= debug
 
 ifeq ($(MODE), debug)
 	DEFINES  += DEBUG
+	DEFINES  += SERVER
+	CXXFLAGS += -g
+endif
+ifeq ($(MODE), debug_client)
+	DEFINES  += DEBUG
+	DEFINES  += CLIENT
 	CXXFLAGS += -g
 endif
 ifeq ($(MODE), nard)
 	DEFINES  += RELEASE
 	DEFINES  += NARD
+	DEFINES  += SERVER
 	CXXFLAGS += $(CROSS_CFLAGS)
 	CXXFLAGS += -fno-reorder-blocks -fno-reorder-blocks-and-partition
 endif

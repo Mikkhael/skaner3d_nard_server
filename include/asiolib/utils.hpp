@@ -3,10 +3,15 @@
 #include <boost/asio.hpp>
 #include <filesystem>
 #include <type_traits>
+#include <ostream>
 
 
 namespace asio = boost::asio;
 using Error = boost::system::error_code;
+
+inline std::ostream& operator<<(std::ostream& os, const Error& error){
+    return os << error.category().name() << ':' << error.value() << " - " << error.message();
+}
 
 namespace fs = std::filesystem;
 
@@ -40,11 +45,7 @@ auto asio_safe_callback(Session* sessionPtr, Callback&& callback, ErrorCallback&
     });
 }
 
-template<
-    class Session,
-    class Callback,
-    class ErrorCallback
->
+template< class Session, class Callback, class ErrorCallback>
 auto asio_safe_io_callback(Session* sessionPtr, Callback&& callback, ErrorCallback&& errorCallback){
     return ([me = sessionPtr->shared_from_this(), &sessionPtr, &callback, &errorCallback](const Error& err, const size_t bytesTransfered){
         if(err){

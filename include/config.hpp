@@ -13,16 +13,17 @@ class Config{
     std::unordered_map<std::string, std::string> raw_options;
     
     class ParsedOptions{
-        #ifdef WIN32
+        #ifdef WINDOWS
             const char* DEV_NULL = "NUL";
         #else
             const char* DEV_NULL = "/dev/null";
-        #endif // WIN32
+        #endif // WINDOWS
         
     public: 
         fs::path infoLogFilePath  = DEV_NULL;
         fs::path errorLogFilePath = DEV_NULL;
         int threads = 1;
+        int udpDiagPort = 1234;
     };
     
 public:
@@ -107,6 +108,19 @@ public:
                     parsingErrors += "Cannot parse the value '";
                     parsingErrors += *temp;
                     parsingErrors += "' of threads";
+                }
+            }
+        }{
+            const auto temp = getOption("udpDiagPort");
+            if(temp){
+                try{
+                    options.udpDiagPort = std::stoi(*temp);
+                }
+                catch(...){
+                    good = false;
+                    parsingErrors += "Cannot parse the value '";
+                    parsingErrors += *temp;
+                    parsingErrors += "' of udpDiagPort";
                 }
             }
         }

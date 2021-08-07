@@ -31,7 +31,15 @@ class Logger
 			return false;
 		}
         
-        if(ioStrand->context().stopped()){
+        const std::lock_guard<std::mutex> lock{offlineWriteMutex};
+        (stream << ... << args);
+        stream.flush(); // Possibly delete
+        
+        #ifdef DEBUG
+            (std::cout << ... << args);
+        #endif //DEBUG
+        
+        /*if(ioStrand->context().stopped()){
             const std::lock_guard<std::mutex> lock{offlineWriteMutex};
             (stream << "(stopped) " << ... << args);
             stream.flush(); // Possibly delete
@@ -48,11 +56,17 @@ class Logger
                     (std::cout << ... << args);
                 #endif //DEBUG
             });
-        }
+        }*/
 		return true;
     }
     
 public:
+    
+    template <typename T>
+    void lockMutex(T&& f){
+        const std::lock_guard<std::mutex> lock{offlineWriteMutex};
+        f();
+    }
     
 	auto getTimestamp() { 
         const auto time_now = std::time(nullptr);
