@@ -6,6 +6,7 @@
 
 #include <config.hpp>
 #include <udp_diag.hpp>
+#include <tcp_transmission.hpp>
 
 #ifdef CLIENT
     #include <ui.hpp>
@@ -58,14 +59,17 @@ try{
     
     #ifdef SERVER
     
-    if(!udpDiagService.start(ioContext, 1234)){
+    if(!udpDiagService.start(ioContext, config.options.udpDiagPort)){
         logger.logErrorLine("Cannot start UDP DIAG Server: ", udpDiagService.getError());
         return -1;
     }
     logger.logInfoLine("Started UDP DIAG Server on port ", udpDiagService.server().getPort());
     
-    
-    // Running ioContext
+    if(!tcpTransServerService.start(ioContext, config.options.tcpTransPort)){
+        logger.logErrorLine("Cannot start TCP TRANS Server: ", tcpTransServerService.getError());
+        return -1;
+    }
+    logger.logInfoLine("Started TCP TRANS Server on port ", tcpTransServerService.server().getPort());
     
     #endif // SERVER
     #ifdef CLIENT
@@ -79,6 +83,10 @@ try{
     userInterface.start(workGuard);
     
     #endif // CLIENT
+    
+    
+    // Running ioContext
+    
     ioContext.restart();
     
     for(int i=0; i<additionalThreads; i++){

@@ -42,7 +42,6 @@ namespace Trans{
             // char[] message
         };
         struct Response{
-            static constexpr DatagramId Id = 13;
             uint32_t length;
             // char[] message
         };

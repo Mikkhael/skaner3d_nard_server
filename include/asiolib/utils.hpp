@@ -19,6 +19,11 @@ using udp = asio::ip::udp;
 using tcp = asio::ip::tcp;
 
 
+template<typename T>
+auto to_buffer(T& object){
+    return asio::buffer(&object, sizeof(T));
+}
+
 template<class Object, class Function, class ...Args>
 static auto invoke_potential_member(Object* objectPtr, Function&& function, Args&& ...args){
     if constexpr( !std::is_invocable_v< Function, Args...> ){
@@ -35,7 +40,7 @@ template<
     class ErrorCallback
 >
 auto asio_safe_callback(Session* sessionPtr, Callback&& callback, ErrorCallback&& errorCallback){
-    return ([me = sessionPtr->shared_from_this(), &sessionPtr, &callback, &errorCallback](const Error& err){
+    return ([me = sessionPtr->shared_from_this(), sessionPtr, &callback, &errorCallback](const Error& err){
         if(err){
             invoke_potential_member(sessionPtr, errorCallback, err);
         }
@@ -47,7 +52,7 @@ auto asio_safe_callback(Session* sessionPtr, Callback&& callback, ErrorCallback&
 
 template< class Session, class Callback, class ErrorCallback>
 auto asio_safe_io_callback(Session* sessionPtr, Callback&& callback, ErrorCallback&& errorCallback){
-    return ([me = sessionPtr->shared_from_this(), &sessionPtr, &callback, &errorCallback](const Error& err, const size_t bytesTransfered){
+    return ([me = sessionPtr->shared_from_this(), sessionPtr, &callback, &errorCallback](const Error& err, const size_t bytesTransfered){
         if(err){
             invoke_potential_member(sessionPtr, errorCallback, err);
         }

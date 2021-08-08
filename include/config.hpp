@@ -24,6 +24,7 @@ class Config{
         fs::path errorLogFilePath = DEV_NULL;
         int threads = 1;
         int udpDiagPort = 1234;
+        int tcpTransPort = 1234;
     };
     
 public:
@@ -121,6 +122,19 @@ public:
                     parsingErrors += "Cannot parse the value '";
                     parsingErrors += *temp;
                     parsingErrors += "' of udpDiagPort";
+                }
+            }
+        }{
+            const auto temp = getOption("tcpTransPort");
+            if(temp){
+                try{
+                    options.tcpTransPort = std::stoi(*temp);
+                }
+                catch(...){
+                    good = false;
+                    parsingErrors += "Cannot parse the value '";
+                    parsingErrors += *temp;
+                    parsingErrors += "' of tcpTransPort";
                 }
             }
         }

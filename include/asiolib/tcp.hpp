@@ -6,6 +6,7 @@
 #include "utils.hpp"
 #include "buffer.hpp"
 
+
 template<class Session>
 class BasicTcpServer {
 protected:
@@ -30,6 +31,8 @@ public:
     auto getError() {return err;}
     auto& getSocket() {return socket;}
     
+    auto getPort() {return port;}
+    
     
     void stopServer(){
         Error ignored;
@@ -39,41 +42,49 @@ public:
     }
     
     bool startServer(const int port){
-        stopServer();
-        acceptor.open(tcp::v4(), err);
-        if(err){
-            HandleError_CannotOpenAcceptor(err);
-            return false;
-        }
-        acceptor.bind(tcp::endpoint(tcp::v4(), port), err);
-        if(err){
-            HandleError_CannotBindAcceptor(err);
-            return false;
-        }
+        //stopServer();
+        // acceptor.open(tcp::v4(), err);
+        // if(err){
+        //     HandleError_CannotOpenAcceptor(err);
+        //     return false;
+        // }
+        // endpoint = tcp::endpoint(tcp::v4(), port);
+        // acceptor.bind(endpoint, err);
+        // if(err){
+        //     HandleError_CannotBindAcceptor(err);
+        //     return false;
+        // }
         
+        acceptor = tcp::acceptor(ioContext, tcp::endpoint(tcp::v4(), port));
+        
+        this->port = port;
         awaitNewConnection();
         return true;
     }
     
     BasicTcpServer(asio::io_context& ioContext)
-        : ioContext(ioContext), acceptor(acceptor)
+        : ioContext(ioContext), acceptor(ioContext)
     {
     }
+    
+    virtual ~BasicTcpServer(){}
     
 private:
     
     void awaitNewConnection(){
         auto newSession = std::make_shared<Session>(ioContext);
         
-		acceptor.async_accept( newSession->getSocket(), [this, newSession](const Error& err){
+		acceptor.async_accept( newSession->getSocket(), newSession->remoteEndpoint, [this, newSession](const Error& err){
 			handleNewConnection(*newSession, err);
 		});
     }
     
-    bool handleNewConnection(const Session& session, const Error& err)
+    bool handleNewConnection(Session& session, const Error& err)
 	{
 		if(err)
 		{
+            if(err == asio::error::operation_aborted)
+                return false;
             HandleError_Connection(err);
             this->err = err;
 			return false;
@@ -84,7 +95,7 @@ private:
             HandleError_GettingRemoteEndpoint(this->err);
             return false;
         }
-        session.getSocket().remoteEndpoint = remoteEndpoint;
+        session.remoteEndpoint = remoteEndpoint;
         asio::post( ioContext, 
             [me = session.shared_from_this()]{
                 me->startSession();
@@ -93,10 +104,6 @@ private:
 		awaitNewConnection();
         return true;
 	}
-    
-    virtual ~BasicTcpServer(){
-        stopServer();
-    }
 };
 
 
@@ -105,6 +112,7 @@ class BasicTcpSession : public std::enable_shared_from_this<Session> {
 protected:
 
     asio::io_context& ioContext;
+    //TcpSafeSocket socket;
     tcp::socket socket;
     
     tcp::resolver resolver;
@@ -118,7 +126,7 @@ protected:
 public:
     
     auto getError() {return err;}
-    auto& getSocket() {return socket;}
+    auto& getSocket() {return this->socket;}
     
     tcp::endpoint remoteEndpoint;
     
@@ -151,16 +159,14 @@ public:
 			return false;
 		}
 		
-		remoteEndpoint = socket.remote_endpoint(err);
-		if(err){
-			HandleError_CannotGetRemoteEndpoint(err);
-			return false;
-		}
+		// remoteEndpoint = socket.remote_endpoint(err);
+		// if(err){
+		// 	HandleError_CannotGetRemoteEndpoint(err);
+		// 	return false;
+		// }
 		
 		return startSession();
 	}
     
-    virtual ~BasicTcpSession(){
-        closeSession();
-    }
+    virtual ~BasicTcpSession(){}
 };
