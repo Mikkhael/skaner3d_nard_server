@@ -23,6 +23,10 @@ template<typename T>
 auto to_buffer(T& object){
     return asio::buffer(&object, sizeof(T));
 }
+template<typename T>
+auto to_buffer_const(const T& object){
+    return asio::buffer(&object, sizeof(T));
+}
 
 template<class Object, class Function, class ...Args>
 static auto invoke_potential_member(Object* objectPtr, Function&& function, Args&& ...args){
@@ -34,30 +38,32 @@ static auto invoke_potential_member(Object* objectPtr, Function&& function, Args
     }
 }
 
-template<
-    class Session,
-    class Callback,
-    class ErrorCallback
->
-auto asio_safe_callback(Session* sessionPtr, Callback&& callback, ErrorCallback&& errorCallback){
-    return ([me = sessionPtr->shared_from_this(), sessionPtr, &callback, &errorCallback](const Error& err){
-        if(err){
-            invoke_potential_member(sessionPtr, errorCallback, err);
-        }
-        else{
-            invoke_potential_member(sessionPtr, callback);
-        }
-    });
-}
+#define ASYNC_CALLBACK [me = shared_from_this()](const Error& err, const size_t bytesTransfered)
 
-template< class Session, class Callback, class ErrorCallback>
-auto asio_safe_io_callback(Session* sessionPtr, Callback&& callback, ErrorCallback&& errorCallback){
-    return ([me = sessionPtr->shared_from_this(), sessionPtr, &callback, &errorCallback](const Error& err, const size_t bytesTransfered){
-        if(err){
-            invoke_potential_member(sessionPtr, errorCallback, err);
-        }
-        else{
-            invoke_potential_member(sessionPtr, callback);
-        }
-    });
-}
+// template<
+//     class Session,
+//     class Callback,
+//     class ErrorCallback
+// >
+// auto asio_safe_callback(Session* sessionPtr, Callback&& callback, ErrorCallback&& errorCallback){
+//     return ([me = sessionPtr->shared_from_this(), sessionPtr, &callback, &errorCallback](const Error& err){
+//         if(err){
+//             invoke_potential_member(sessionPtr, errorCallback, err);
+//         }
+//         else{
+//             invoke_potential_member(sessionPtr, callback);
+//         }
+//     });
+// }
+
+// template< class Session, class Callback, class ErrorCallback>
+// auto asio_safe_io_callback(Session* sessionPtr, Callback&& callback, ErrorCallback&& errorCallback){
+//     return ([me = sessionPtr->shared_from_this(), sessionPtr, &callback, &errorCallback](const Error& err, const size_t bytesTransfered){
+//         if(err){
+//             invoke_potential_member(sessionPtr, errorCallback, err);
+//         }
+//         else{
+//             invoke_potential_member(sessionPtr, callback);
+//         }
+//     });
+// }

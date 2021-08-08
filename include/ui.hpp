@@ -1,6 +1,7 @@
 #pragma once
 
 #include <udp_diag.hpp>
+#include <tcp_transmission.hpp>
 
 #include <vector>
 #include <thread>
@@ -8,8 +9,9 @@
 class UI{
     
     std::optional<std::thread> threadOptional;
-    
     asio::io_context& ioContext;
+    
+    std::shared_ptr<TcpTransSession> tcpTransClient;    
     
     bool stopped = false;
     
@@ -21,7 +23,6 @@ class UI{
         std::cin >> address >> port;
         return typename Protocol::endpoint{asio::ip::address_v4::from_string(address), port};
     }
-    
 
     struct MenuEntry{
         std::string activator;
@@ -51,14 +52,12 @@ class UI{
         MenuEntry{"de", "Send UDP DIAG ECHO | <address> <port> <message>", [this](){
             auto endpoint = cinEndpoint<udp>();
             std::string message;
-            while(std::cin.peek() == ' ' || std::cin.peek() == '\n')
-                std::cin.get();
-            std::getline(std::cin, message);
+            std::cin >> message;
             if(!udpDiagService.sendEchoRequest(endpoint, message)){
                 logger.logErrorLine("Error: ", udpDiagService.getError());
             }
         }},
-        MenuEntry{"dm", "Send UDP DIAG ECHO | <address> <port> <op1> <op2>", [this](){
+        MenuEntry{"dm", "Send UDP DIAG MULT | <address> <port> <op1> <op2>", [this](){
             auto endpoint = cinEndpoint<udp>();
             int op1, op2;
             std::cin >> op1 >> op2;
@@ -66,6 +65,28 @@ class UI{
                 logger.logErrorLine("Error: ", udpDiagService.getError());
             }
         }},
+        
+        MenuEntry{"ts", "Start TCP TRANS Session | <address> <port> ", [this](){
+            std::string address, service;
+            std::cin >> address >> service;
+            if(!tcpTransClient->resolveAndConnect(address, service)){
+                logger.logErrorLine("Cannot start TCP TRANS Client: ", tcpTransClient->getError());
+            }
+            else{
+                logger.logInfoLine("Started TCP TRANS Client on port ", tcpTransClient->getPort());
+            }
+        }},
+        MenuEntry{"tx", "Close TCP TRANS Session | ", [this](){
+            tcpTransClient->closeSession();
+            logger.logInfoLine("Closed TCP TRANS session");
+        }},
+        MenuEntry{"te", "Send TCP TRANS ECHO | <message>", [this](){
+            std::string message;
+            std::cin >> message;
+            tcpTransClient->sendEchoRequest(message);
+        }},
+        
+        
         
         MenuEntry{"q", "Quit", [this]{stopped = true;}}
     };
@@ -108,6 +129,9 @@ public:
                 }
             }
             udpDiagService.stop();
+            tcpTransClient->closeSession();
+            std::cout << "TCP TRANS CLIENT use count: " << tcpTransClient.use_count() << std::endl;
+            tcpTransClient.reset();
             workGuard.reset();
         });
     }
@@ -118,7 +142,7 @@ public:
     }
     
     UI(asio::io_context& ioContext)
-        : ioContext(ioContext)
+        : ioContext(ioContext), tcpTransClient(new TcpTransSession(ioContext))
     {}
     
 };

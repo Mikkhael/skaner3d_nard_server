@@ -6,10 +6,11 @@ void UdpDiagHandler::handleUdpPingRequest(){
     udpDiagService.socket().async_send_to_safe(
         buffer.getToCarret(),
         remoteEndpoint,
-        asio_safe_io_callback( this,
-            []{},
-            &UdpDiagHandler::defaultErrorHandler
-        )
+        ASYNC_CALLBACK{
+            if(err){
+                me->defaultErrorHandler(err);
+            }
+        }
     );
 }
 void UdpDiagHandler::handleUdpPingResponse(){
@@ -28,10 +29,11 @@ void UdpDiagHandler::handleUdpEchoRequest(){
     udpDiagService.socket().async_send_to_safe(
         buffer.getToCarret(),
         remoteEndpoint,
-        asio_safe_io_callback( this, 
-            []{},
-            &UdpDiagHandler::defaultErrorHandler
-        )
+        ASYNC_CALLBACK{
+            if(err){
+                me->defaultErrorHandler(err);
+            }
+        }
     );
 }
 void UdpDiagHandler::handleUdpEchoResponse(){
@@ -60,10 +62,11 @@ void UdpDiagHandler::handleUdpMultRequest(){
     udpDiagService.socket().async_send_to_safe(
         buffer.getToCarret(),
         remoteEndpoint,
-        asio_safe_io_callback( this, 
-            []{},
-            &UdpDiagHandler::defaultErrorHandler
-        )
+        ASYNC_CALLBACK{
+            if(err){
+                me->defaultErrorHandler(err);
+            }
+        }
     );
 }
 

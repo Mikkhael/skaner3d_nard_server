@@ -130,11 +130,13 @@ public:
     
     tcp::endpoint remoteEndpoint;
     
+    auto getPort() {return remoteEndpoint.port();}
+    
     BasicTcpSession(asio::io_context& ioContext)
         : ioContext(ioContext), socket(ioContext), resolver(ioContext)
     {}
     
-    virtual void startSession() = 0;
+    virtual bool startSession() = 0;
     
     void closeSession(){
         Error ignored;
@@ -159,11 +161,11 @@ public:
 			return false;
 		}
 		
-		// remoteEndpoint = socket.remote_endpoint(err);
-		// if(err){
-		// 	HandleError_CannotGetRemoteEndpoint(err);
-		// 	return false;
-		// }
+		remoteEndpoint = socket.remote_endpoint(err);
+		if(err){
+			HandleError_CannotGetRemoteEndpoint(err);
+			return false;
+		}
 		
 		return startSession();
 	}

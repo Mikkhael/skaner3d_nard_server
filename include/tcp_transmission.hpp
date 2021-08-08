@@ -1,3 +1,5 @@
+#pragma once
+
 #include "asiolib/all.hpp"
 
 #include "async_request_queue.hpp"
@@ -26,9 +28,13 @@ protected:
         logErrorLine("Cannot read remote endpoint of socket | ", err);
     };
     
-    void defaultErrorHandler(const Error& err){
-       logErrorLine("Asio Error: ", err);
-       //closeSession();
+    
+    void handleError(const Error& err, std::string_view message = ""){
+        if(err == asio::error::eof){
+            logErrorLine("Asio Error | ", message, " | ", "Connection unexpectedly closed.");
+            return;
+        }
+        logErrorLine("Asio Error | ", message, " | ", err);
     }
     
     ArrayBuffer<512> buffer;
@@ -78,13 +84,17 @@ protected:
     
     // Echo
     
-    void sendEchoRequest(std::string_view message);
+    public: 
+        void sendEchoRequest(std::string_view message);
+    protected:
     void receiveEchoResponseHeader();
-    void receiveEchoResponseMessage();
+    void handleEchoResponseHeader();
+    void handleEchoResponseMessage();
     
     #endif // CLIENT
     
     void completeOperation(){
+        tempBufferCollection.reset();
         #ifdef SERVER
             awaitNewRequest();
         #endif // SERVER
@@ -92,10 +102,11 @@ protected:
     
 public:
     
-    virtual void startSession() override{
+    virtual bool startSession() override{
         #ifdef SERVER
             awaitNewRequest();
         #endif // SERVER
+        return true;
     }
     
     TcpTransSession(asio::io_context& ioContext)
