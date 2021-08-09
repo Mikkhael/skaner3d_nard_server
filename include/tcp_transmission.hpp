@@ -3,7 +3,7 @@
 #include "asiolib/all.hpp"
 
 #include "async_request_queue.hpp"
-#include <variant>
+#include <variant.hpp>
 
 class TcpTransSession : public BasicTcpSession<TcpTransSession>
 {
@@ -29,7 +29,7 @@ protected:
     };
     
     
-    void handleError(const Error& err, std::string_view message = ""){
+    void handleError(const Error& err, const std::string& message = ""){
         if(err == asio::error::eof){
             logErrorLine("Asio Error | ", message, " | ", "Connection unexpectedly closed.");
             return;
@@ -45,19 +45,19 @@ protected:
         struct Empty{};
         struct Echo{ std::string message; };
     private:
-        std::variant<
+        boost::variant<
             Empty,
             Echo
         > buffer;
     public:
         template<typename T>
         auto& set(){
-            buffer.emplace<T>();
+            buffer = T{};
             return get<T>();
         }
         template<typename T>
         auto& get(){
-            return std::get<T>(buffer);
+            return boost::get<T>(buffer);
         }
         void reset(){
             set<Empty>();
@@ -85,7 +85,7 @@ protected:
     // Echo
     
     public: 
-        void sendEchoRequest(std::string_view message);
+        void sendEchoRequest(const std::string& message);
     protected:
     void receiveEchoResponseHeader();
     void handleEchoResponseHeader();
@@ -140,7 +140,7 @@ public:
 };
 
 class TcpTransServerService{
-    std::optional<TcpTransServer> m_server;
+    boost::optional<TcpTransServer> m_server;
     
     Error err;
     
@@ -171,6 +171,6 @@ public:
 
 #ifdef SERVER
 
-inline TcpTransServerService tcpTransServerService;
+extern TcpTransServerService tcpTransServerService;
 
 #endif // SERVER

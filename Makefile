@@ -31,7 +31,7 @@ endif
 DEFINES  = BOOST_ERROR_CODE_HEADER_ONLY
 
 # Additional flags for compilation and linking
-CXXFLAGS = -std=c++17 -Wall -Wpedantic
+CXXFLAGS = -std=c++14 -Wall -Wpedantic
 LDFLAGS  = 
 
 ifeq ($(OS), Windows_NT)

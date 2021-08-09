@@ -20,7 +20,7 @@ void UdpDiagHandler::handleUdpPingResponse(){
 void UdpDiagHandler::handleUdpEchoRequest(){
     std::string message;
     message.resize(bytesTransfered - sizeof(DatagramId));
-    buffer.loadBytesCarret(message.data(), message.size());
+    buffer.loadBytesCarret(&(message[0]), message.size());
     
     logInfoLine("Received Echo Request with message: ", message);
     
@@ -39,7 +39,7 @@ void UdpDiagHandler::handleUdpEchoRequest(){
 void UdpDiagHandler::handleUdpEchoResponse(){
     std::string message;
     message.resize(bytesTransfered - sizeof(DatagramId));
-    buffer.loadBytesCarret(message.data(), message.size());
+    buffer.loadBytesCarret(&(message[0]), message.size());
     
     logInfoLine("Received Echo Response with message: ", message);
 }
@@ -76,3 +76,8 @@ void UdpDiagHandler::handleUdpMultResponse(){
     
     logInfoLine("Received Mult Response with result: ", response.result);
 }
+
+
+
+
+UdpDiagService udpDiagService;

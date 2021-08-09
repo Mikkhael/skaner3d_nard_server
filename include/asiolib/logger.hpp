@@ -1,8 +1,9 @@
 #pragma once
 
 #include "utils.hpp"
+#include "fold.hpp"
 #include <chrono>
-#include <optional>
+#include <optional.hpp>
 #include <fstream>
 #include <mutex>
 
@@ -17,7 +18,7 @@ class Logger
 {
     
     asio::io_context* ioContextPtr;
-    std::optional<asio::io_context::strand> ioStrand;
+    boost::optional<asio::io_context::strand> ioStrand;
     
     std::ofstream infoLogFile;
     std::ofstream errorLogFile;
@@ -32,11 +33,11 @@ class Logger
 		}
         
         const std::lock_guard<std::mutex> lock{offlineWriteMutex};
-        (stream << ... << args);
+        fold_ostream(stream, std::forward<T>(args)...);
         stream.flush(); // Possibly delete
         
         #ifdef DEBUG
-            (std::cout << ... << args);
+            fold_ostream(std::cout, std::forward<T>(args)...);
         #endif //DEBUG
         
         /*if(ioStrand->context().stopped()){
@@ -78,7 +79,7 @@ public:
     auto& getIoStrand() const {return *ioStrand; }
     void setIoContext(asio::io_context& ioContext){ ioContextPtr = &ioContext; ioStrand.emplace(ioContext); }
     
-    bool setLogFiles (const fs::path& infoLogFilePath, const fs::path& errorLogFilePath){
+    bool setLogFiles (const std::string& infoLogFilePath, const std::string& errorLogFilePath){
         infoLogFile.open(infoLogFilePath, std::fstream::out | std::fstream::app);
         if(!infoLogFile.is_open()){
             return false;
@@ -98,4 +99,4 @@ public:
     
 };
 
-inline Logger logger;
+extern Logger logger;

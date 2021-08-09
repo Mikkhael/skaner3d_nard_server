@@ -25,7 +25,7 @@ class async_request_queue
 public:
 
     void performNext(){
-        std::lock_guard lock{mutex};
+        std::lock_guard<std::mutex> lock{mutex};
         if(queue.size() == 0){
             isPerforming = false;
             return;
@@ -39,7 +39,7 @@ public:
         bool shoudStartPerforming = false;
         
         {
-            std::lock_guard lock{mutex};
+            std::lock_guard<std::mutex> lock{mutex};
             queue.push(request);
             if(!isPerforming){
                 isPerforming = true;

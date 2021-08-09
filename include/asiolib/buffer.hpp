@@ -4,17 +4,17 @@
 
 
 
-template <typename Head, typename ...Tail>
-constexpr static size_t PACKSIZEOF_impl()
-{
-	if constexpr ( sizeof...(Tail) == 0)
-		return sizeof(Head);
-	else
-		return sizeof(Head) + PACKSIZEOF_impl<Tail...>();
-}
+// template <typename Head, typename ...Tail>
+// constexpr static size_t PACKSIZEOF_impl()
+// {
+// 	if constexpr ( sizeof...(Tail) == 0)
+// 		return sizeof(Head);
+// 	else
+// 		return sizeof(Head) + PACKSIZEOF_impl<Tail...>();
+// }
 
-template <typename ...Tail>
-constexpr size_t PACKSIZEOF = PACKSIZEOF_impl<Tail...>();
+// template <typename ...Tail>
+// constexpr size_t PACKSIZEOF = PACKSIZEOF_impl<Tail...>();
 
 
 template <size_t BufferSize>
@@ -31,7 +31,7 @@ class ArrayBuffer
 	template<size_t TotalSizeAcc, typename T>
 	size_t loadMultiple_impl(const size_t offset, T& object)
 	{
-		static_assert(TotalSizeAcc <= BufferSize);
+		static_assert(TotalSizeAcc <= BufferSize, "loadMultiple_impl");
 		return loadObjectAt(offset, object);
 	}
 	
@@ -43,7 +43,7 @@ class ArrayBuffer
 	template<size_t TotalSizeAcc, typename T>
 	size_t saveMultiple_impl(const size_t offset, const T& object)
 	{
-		static_assert(TotalSizeAcc <= BufferSize);
+		static_assert(TotalSizeAcc <= BufferSize, "saveMultiple_impl");
 		return saveObjectAt(offset, object);
 	}
     
@@ -91,13 +91,13 @@ public:
 	template<typename T>
 	void loadObject(T& object)
 	{
-		static_assert( sizeof(T) <= BufferSize );
+		static_assert( sizeof(T) <= BufferSize, "loadObject" );
 		loadBytes((char*)&object, sizeof(T));
 	}
 	template<typename T>
 	size_t loadObjectAt(const size_t offset, T& object)
 	{
-		static_assert( sizeof(T) <= BufferSize );
+		static_assert( sizeof(T) <= BufferSize, "loadObjectAt" );
 		return loadBytesAt(offset, (char*)&object, sizeof(T));
 	}
 	template <typename ...Ts>
@@ -115,13 +115,13 @@ public:
 	template<typename T>
 	void saveObject(const T& object)
 	{
-		static_assert( sizeof(T) <= BufferSize );
+		static_assert( sizeof(T) <= BufferSize, "saveObject" );
 		return saveBytes((char*)&object, sizeof(T));
 	}
 	template<typename T>
 	size_t saveObjectAt(const size_t offset, const T& object)
 	{
-		static_assert( sizeof(T) <= BufferSize );
+		static_assert( sizeof(T) <= BufferSize, "saveObjectAt" );
 		return saveBytesAt(offset, (char*)&object, sizeof(T));
 	}
 	template <typename ...Ts>

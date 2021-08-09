@@ -8,7 +8,7 @@
 
 class UI{
     
-    std::optional<std::thread> threadOptional;
+    boost::optional<std::thread> threadOptional;
     asio::io_context& ioContext;
     
     std::shared_ptr<TcpTransSession> tcpTransClient;    

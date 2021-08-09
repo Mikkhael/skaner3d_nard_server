@@ -8,7 +8,7 @@
 
 void TcpTransSession::awaitNewRequest(){
     logInfoLine("Awaiting new request.");
-    //std::cout << "COUNT BEFORE: " << this->weak_from_this().use_count() << std::endl;
+    //std::cout << "COUNT BEFORE: " << this->shared_from_this().use_count() << std::endl;
     
     // asio::async_read(getSocket(), buffer.get(sizeof(DatagramId)), [me = this->shared_from_this()](const Error& err, const size_t bytesTransfered){
     //     DatagramId id;
@@ -29,7 +29,7 @@ void TcpTransSession::awaitNewRequest(){
         }
         DatagramId id;
         me->buffer.loadObject(id);
-        std::cout << "COUNT AFTER: " << me->weak_from_this().use_count() << std::endl;
+        //std::cout << "COUNT AFTER: " << me->shared_from_this().use_count() << std::endl;
         me->logInfoLine("Received request with id: ", int(id));
         switch(id){
             case Trans::Echo::Request::Id : me->receiveEchoRequestHeader(); break;
@@ -45,7 +45,7 @@ void TcpTransSession::awaitNewRequest(){
 
 void TcpTransSession::receiveEchoRequestHeader(){
     logInfoLine("Receiving Echo Request Header");
-    //std::cout << "COUNT RECEIVE: " << weak_from_this().use_count() << std::endl;
+    //std::cout << "COUNT RECEIVE: " << shared_from_this().use_count() << std::endl;
     tempBufferCollection.set<TempBufferCollection::Echo>();
     asio::async_read(getSocket(), buffer.get(sizeof(Trans::Echo::Request)), ASYNC_CALLBACK{
         if(err){
@@ -58,7 +58,7 @@ void TcpTransSession::receiveEchoRequestHeader(){
 
 void TcpTransSession::handleEchoRequestHeader(){
     
-    //std::cout << "COUNT HANDLE: " << weak_from_this().use_count() << std::endl;
+    //std::cout << "COUNT HANDLE: " << shared_from_this().use_count() << std::endl;
     auto& tempBuffer = tempBufferCollection.get<TempBufferCollection::Echo>();
     
     Trans::Echo::Request request;
@@ -83,10 +83,10 @@ void TcpTransSession::sendEchoResponse(){
     logInfoLine("Sending Echo Response with message: ", tempBuffer.message);
     Error err;
     asio::write(getSocket(), 
-        std::array{
+        buffers_array(
             to_buffer(response),
             asio::buffer(tempBuffer.message)
-        },
+        ),
         err
     );
     if(err){
@@ -102,16 +102,16 @@ void TcpTransSession::sendEchoResponse(){
 
 // Echo
 
-void TcpTransSession::sendEchoRequest(std::string_view message){
+void TcpTransSession::sendEchoRequest(const std::string& message){
     Trans::Echo::Request request;
     request.length = message.size();
     Error err;
     logInfoLine("Sending Echo Request with length ", request.length, " and message: ", message);
-    asio::write(getSocket(), std::array{
+    asio::write(getSocket(), const_buffers_array(
         to_buffer(Trans::Echo::Request::Id),
         to_buffer_const(request),
         asio::buffer(message)
-    }, err);
+    ), err);
     if(err){
         handleError(err, "While sending Echo Request.");
         return;
@@ -136,7 +136,7 @@ void TcpTransSession::handleEchoResponseHeader(){
     logInfoLine("Received Echo Response Header with length ", response.length);
     auto& tempBuffer = tempBufferCollection.set<TempBufferCollection::Echo>();
     tempBuffer.message.resize(response.length);
-    asio::async_read(getSocket(), asio::buffer(tempBuffer.message.data(), response.length), ASYNC_CALLBACK{
+    asio::async_read(getSocket(), asio::buffer(tempBuffer.message), ASYNC_CALLBACK{
         if(err){
             me->handleError(err, "While receiving Echo Response Message");
             return;
@@ -154,3 +154,11 @@ void TcpTransSession::handleEchoResponseMessage(){
 
 #endif // CLIENT
 
+
+
+
+#ifdef SERVER
+
+TcpTransServerService tcpTransServerService;
+
+#endif // SERVER

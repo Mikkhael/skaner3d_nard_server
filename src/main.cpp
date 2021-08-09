@@ -29,7 +29,7 @@ try{
     config.parseCommandLineOptions(argc, argv); 
     auto configPath = config.getOption("configPath");
     if(configPath){
-        //std::cout << "Loading config path: " << fs::path(*config_path) << '\n';
+        //std::cout << "Loading config path: " << std::string(*config_path) << '\n';
         config.loadConfigFile(*configPath);
     }
     
@@ -73,9 +73,6 @@ try{
     
     #endif // SERVER
     #ifdef CLIENT
-    
-    //std::optional<asio::executor_work_guard<asio::io_context::executor_type> > workGuard;
-    //workGuard.emplace(ioContext.get_executor());
     
     asio::executor_work_guard<asio::io_context::executor_type> workGuard(ioContext.get_executor());
     

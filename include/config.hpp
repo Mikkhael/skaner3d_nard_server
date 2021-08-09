@@ -1,12 +1,12 @@
 #pragma once
 
 #include <fstream>
-#include <filesystem>
+//#include <filesystem>
 #include <unordered_map>
 #include <string>
-#include <optional>
+#include <optional.hpp>
 
-namespace fs = std::filesystem;
+//namespace fs = std::filesystem;
 
 class Config{
     
@@ -20,8 +20,8 @@ class Config{
         #endif // WINDOWS
         
     public: 
-        fs::path infoLogFilePath  = DEV_NULL;
-        fs::path errorLogFilePath = DEV_NULL;
+        std::string infoLogFilePath  = DEV_NULL;
+        std::string errorLogFilePath = DEV_NULL;
         int threads = 1;
         int udpDiagPort = 1234;
         int tcpTransPort = 1234;
@@ -32,7 +32,7 @@ public:
     ParsedOptions options;
     std::string optionsParsingError;
     
-    bool loadConfigFile(const fs::path path){
+    bool loadConfigFile(const std::string path){
         std::ifstream file(path);
         if(!file.is_open()){
             return false;
@@ -54,7 +54,7 @@ public:
         raw_options.insert({option, value});
     }
     
-    std::optional<std::string> getOption(const std::string& option){
+    boost::optional<std::string> getOption(const std::string& option){
         const auto it = raw_options.find(option);
         if(it == raw_options.end())
             return {};
@@ -144,11 +144,11 @@ public:
     }
     
     auto& listOptions(std::ostream& os) const {
-        for(const auto& [key, value] : raw_options){
-            os << key << "=" << value << '\n';
+        for(const auto& o : raw_options){
+            os << o.first << "=" << o.second << '\n';
         }
         return os;
     }
 };
 
-inline Config config;
+extern Config config;

@@ -3,7 +3,7 @@
 #include "asiolib/all.hpp"
 #include "datagrams.hpp"
 
-#include <optional>
+#include <optional.hpp>
 #include <functional>
 
 class UdpDiagHandler : public BasicUdpDatagramHandler<UdpDiagHandler, 1500>
@@ -97,7 +97,7 @@ public:
 
 class UdpDiagService{
     
-    std::optional<UdpDiagServer> m_server;
+    boost::optional<UdpDiagServer> m_server;
     
     Error err;
     
@@ -156,7 +156,7 @@ public:
         return sendCustomRequest(buffer, destination);
     }
     
-    bool sendEchoRequest(const udp::endpoint destination, std::string_view message){
+    bool sendEchoRequest(const udp::endpoint destination, const std::string& message){
         logger.logInfoLine("UDP DIAG Sending Echo Request to endpoint ", destination, " with message: ", message);
         std::vector<char> buffer(
             sizeof(DatagramId) + 
@@ -185,4 +185,4 @@ public:
     }
 };
 
-inline UdpDiagService udpDiagService;
+extern UdpDiagService udpDiagService;

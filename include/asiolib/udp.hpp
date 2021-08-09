@@ -20,21 +20,21 @@ public:
     template<class ...Args>
     auto async_receive_from_safe(Args&& ...args)
     {
-        std::lock_guard lock{mutex};
+        std::lock_guard<std::mutex> lock{mutex};
         return udp::socket::async_receive_from(std::forward<Args>(args)...);
     }
     
     template<class ...Args>
     auto async_send_to_safe(Args&& ...args)
     {
-        std::lock_guard lock{mutex};
+        std::lock_guard<std::mutex> lock{mutex};
         return udp::socket::async_send_to(std::forward<Args>(args)...);
     }
     
     template<class ...Args>
     auto send_to_safe(Args&& ...args)
     {
-        std::lock_guard lock{mutex};
+        std::lock_guard<std::mutex> lock{mutex};
         return udp::socket::send_to(std::forward<Args>(args)...);
     }    
 };
@@ -116,6 +116,7 @@ private:
     
     void awaitNewDatagram(){
         //std::cout << "Awaiting new datagram, Endpoint: " << socket.local_endpoint() << '\n';
+        //auto newHandler = std::shared_ptr<Handler>(new Handler);
         auto newHandler = std::make_shared<Handler>();
 		socket.async_receive_from_safe(newHandler->buffer.get(), newHandler->remoteEndpoint, [this, newHandler](const Error& err, const size_t bytesTransfered){
 			if(err)
@@ -149,14 +150,17 @@ public:
     
     virtual void handle(const size_t bytesTransfered) = 0;
     
-    #ifdef DEBUG
+    // #ifdef DEBUG
         
-        BasicUdpDatagramHandler(){
-            logger.logInfoLine("New UDP HANDLER: (", this->weak_from_this().use_count(), ")");
-        }
-        virtual ~BasicUdpDatagramHandler(){
-            logger.logInfoLine("Delete UDP HANDLER: (", this->weak_from_this().use_count(), ")");
-        }
+    //     BasicUdpDatagramHandler(){
+    //         logger.logInfoLine("New UDP HANDLER: (", this->shared_from_this().use_count(), ")");
+    //     }
+    //     virtual ~BasicUdpDatagramHandler(){
+    //         logger.logInfoLine("Delete UDP HANDLER: (", this->shared_from_this().use_count(), ")");
+    //     }
     
-    #endif //DEBUG
+    // #endif //DEBUG
+    
+    
+    virtual ~BasicUdpDatagramHandler(){}
 };

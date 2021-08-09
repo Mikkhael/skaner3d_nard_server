@@ -145,7 +145,7 @@ public:
         socket.close(ignored);
     }
     
-    bool resolveAndConnect(const std::string_view hostname, const std::string_view port)
+    bool resolveAndConnect( const std::string& hostname, const std::string& port)
 	{
 		closeSession();
 		
