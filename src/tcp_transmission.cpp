@@ -7,6 +7,9 @@
 // Main
 
 void TcpTransSession::awaitNewRequest(){
+    if(operationCompletion.setBusy()){
+        return;
+    }
     logInfoLine("Awaiting new request.");
     //std::cout << "COUNT BEFORE: " << this->shared_from_this().use_count() << std::endl;
     
@@ -106,17 +109,20 @@ static uint32_t getRandomId(){
 void TcpTransSession::startSendFile(){
     if(!tempBufferCollection.is<TempBufferCollection::File>()){
         logErrorLine("Attempted to send File without specifying which file to send. Closing session.");
+        operationCompletion.setResult(CustomError::Critical);
         closeSession();
         return;
     }
     auto& tempBuffer = tempBufferCollection.get<TempBufferCollection::File>();
     if(tempBuffer.file.tellg() >= tempBuffer.end){
         logErrorLine("In file send setup: End is not after Begin (", tempBuffer.file.tellg(), "-", tempBuffer.end, "). Closing session.");
+        operationCompletion.setResult(CustomError::Critical);
         closeSession();
         return;
     }
     if(!tempBuffer.file.is_open() || tempBuffer.file.fail()){
         logErrorLine("Unable to open specified file to send");
+        operationCompletion.setResult(CustomError::FileOpen);
         tempBuffer.fileId = 0;
         completeSendFile(false);
         return;
@@ -152,6 +158,7 @@ void TcpTransSession::sendFilePart(){
     }
     if(!tempBuffer.file.read(buffer.data(), bytesToSend)){
         logErrorLine("Error while reading from file designated to send.");
+        operationCompletion.setResult(CustomError::FileRead);
         completeSendFile(false);
         return;
     }
@@ -247,11 +254,15 @@ void TcpTransSession::prepareCustomFileToSend(){
 
 
 #endif // SERVER
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 #ifdef CLIENT
 
 // Echo
 
 void TcpTransSession::sendEchoRequest(const std::string& message){
+    operationCompletion.setBusy();
     Trans::Echo::Request request;
     request.length = message.size();
     Error err;
@@ -319,7 +330,9 @@ void TcpTransSession::startReceiveFile(){
             return;
         }
         if(id != Trans::FilePart::Id_Start){
-            me->logErrorLine("Unexpected Id during start of file transmission: ", int(id));
+            me->logErrorLine("Unexpected Id during start of file transmission: ", int(id), ". Closing session.");
+            me->operationCompletion.setResult(CustomError::Illformated);
+            me->closeSession();
             return;
         }
         
@@ -343,7 +356,9 @@ void TcpTransSession::receiveFilePart(){
         
         auto& tempBuffer = me->tempBufferCollection.get<TempBufferCollection::File>();
         if(header.fileId != tempBuffer.fileId){
-            me->logErrorLine("Unexpected fileId during file transmission: ", header.fileId, " (expected ", tempBuffer.fileId, ")");
+            me->logErrorLine("Unexpected fileId during file transmission: ", header.fileId, " (expected ", tempBuffer.fileId, "). Closing session.");
+            me->operationCompletion.setResult(CustomError::Illformated);
+            me->closeSession();
             return;
         }
         if(id == Trans::FilePart::Id_Fail){
@@ -355,12 +370,16 @@ void TcpTransSession::receiveFilePart(){
             return;
         }
         if(id != Trans::FilePart::Id_Part){
-            me->logErrorLine("Unexpected Id during file transmission: ", int(id));
+            me->logErrorLine("Unexpected Id during file transmission: ", int(id), ". Closing session.");
+            me->operationCompletion.setResult(CustomError::Illformated);
+            me->closeSession();
             return;
         }
         if(header.partSize > me->buffer.getTotalBufferSize()){
             me->logErrorLine("Cannot receive File Part because the part length is bigger than the internal buffer (",
                                 header.partSize, " > ", me->buffer.getTotalBufferSize(), "). Closing session.");
+            
+            me->operationCompletion.setResult(CustomError::Critical);
             me->closeSession();
             return;
         }
@@ -372,6 +391,7 @@ void TcpTransSession::receiveFilePart(){
             auto& tempBuffer = me->tempBufferCollection.get<TempBufferCollection::File>();
             if(!tempBuffer.file.write(me->buffer.data(), bytesTransfered)){
                 me->logErrorLine("Cannot save received data to local file. Closing session.");
+                me->operationCompletion.setResult(CustomError::FileWrite);
                 me->closeSession();
                 return;
             }
@@ -394,10 +414,13 @@ void TcpTransSession::completeReceiveFile(bool successful){
 
 void TcpTransSession::sendCustomFileRequest(const std::string& filepath, uint32_t fromEnd, const std::string& save_filepath, std::fstream::openmode opm){
     
+    operationCompletion.setBusy();
     auto& tempBuffer = tempBufferCollection.set<TempBufferCollection::File>();
     tempBuffer.file.open(save_filepath, std::fstream::out | std::fstream::binary | opm);
     if(!tempBuffer.file.is_open() || !tempBuffer.file){
         logErrorLine("Cannot open specified file: ", save_filepath);
+        operationCompletion.setResult(CustomError::FileOpen);
+        completeOperation();
         return;
     }
     

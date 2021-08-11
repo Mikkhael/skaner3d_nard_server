@@ -149,6 +149,10 @@ public:
     
     UI(asio::io_context& ioContext)
         : ioContext(ioContext), tcpTransClient(new TcpTransSession(ioContext))
-    {}
+    {
+        tcpTransClient->setOperationCompletionHandler([](const OperationCompletion::Result& result){
+            std::cout << "OPERATION COMPLETION: " << result << std::endl;
+        });
+    }
     
 };

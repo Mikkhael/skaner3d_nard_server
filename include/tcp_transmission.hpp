@@ -7,6 +7,9 @@
 #include <fstream>
 #include <functional>
 
+#include "operationCompletion.hpp"
+
+
 class TcpTransSession : public BasicTcpSession<TcpTransSession>
 {
 protected:
@@ -31,12 +34,17 @@ protected:
     };
     
     
+    OperationCompletion operationCompletion;
+    
     void handleError(const Error& err, const std::string& message = ""){
+        operationCompletion.setResult(err);
         if(err == asio::error::eof){
             logErrorLine("Asio Error | ", message, " | ", "Connection unexpectedly closed.");
-            return;
+        }else{
+            logErrorLine("Asio Error | ", message, " | ", err);
         }
-        logErrorLine("Asio Error | ", message, " | ", err);
+        tempBufferCollection.reset();
+        operationCompletion.complete();
     }
     
     ArrayBuffer<16*1024> buffer;
@@ -131,6 +139,7 @@ protected:
         logInfoLine("Completed Operation.");
         buffer.resetCarret();
         tempBufferCollection.reset();
+        operationCompletion.complete();
         #ifdef SERVER
             awaitNewRequest();
         #endif // SERVER
@@ -143,6 +152,11 @@ public:
             awaitNewRequest();
         #endif // SERVER
         return true;
+    }
+    
+    template <typename T>
+    void setOperationCompletionHandler(T&& handler){
+        operationCompletion.setCompletionHandler(handler);
     }
     
     TcpTransSession(asio::io_context& ioContext)
