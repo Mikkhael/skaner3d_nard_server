@@ -50,6 +50,8 @@ class ArrayBuffer
     
 public:
 	
+	auto data(){ return buffer.data(); }
+	
 	void loadBytes(char* to, size_t length)
 	{
 		assert( length <= BufferSize );

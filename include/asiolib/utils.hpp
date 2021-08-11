@@ -38,4 +38,6 @@ auto const_buffers_array(Ts&& ...ts){
 }
 
 
+#define ASYNC_CALLBACK_NESTED [me](const Error& err, const size_t bytesTransfered)
 #define ASYNC_CALLBACK [me = shared_from_this()](const Error& err, const size_t bytesTransfered)
+#define ASYNC_CALLBACK_CAPTURE(...) [me = shared_from_this(), __VA_ARGS__](const Error& err, const size_t bytesTransfered)

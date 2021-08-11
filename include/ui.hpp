@@ -85,6 +85,12 @@ class UI{
             std::cin >> message;
             tcpTransClient->sendEchoRequest(message);
         }},
+        MenuEntry{"tf", "Send TCP TRANS CUSTOM FILE | <server_filename> <fromEnd> <local_filename>", [this](){
+            std::string filename, local_filename;
+            uint32_t fromEnd;
+            std::cin >> filename >> fromEnd >> local_filename;
+            tcpTransClient->sendCustomFileRequest(filename, fromEnd, local_filename);
+        }},
         
         
         

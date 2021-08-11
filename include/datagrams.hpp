@@ -1,7 +1,8 @@
 #pragma once
 #include <cinttypes>
+#include <ostream>
 
-using DatagramId = int8_t;
+using DatagramId = uint8_t;
 
 namespace Diag{
     namespace Ping{
@@ -45,5 +46,25 @@ namespace Trans{
             uint32_t length;
             // char[] message
         };
+    }
+    
+    struct FilePart{
+        static constexpr DatagramId Id_Start = 120;
+        static constexpr DatagramId Id_Part = 121;
+        static constexpr DatagramId Id_Success = 122;
+        static constexpr DatagramId Id_Fail = 123;
+        uint32_t fileId;
+        uint32_t partSize;
+        // char[] data
+    };
+    
+    namespace CustomFile{
+        struct Request{
+            static constexpr DatagramId Id = 130;
+            uint32_t filepathLength;
+            uint32_t fromEnd;
+            // char[] filepath
+        };
+        // Response is the SendComplete response
     }
 }

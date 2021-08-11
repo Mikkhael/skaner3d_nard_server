@@ -4,6 +4,8 @@
 
 #include "async_request_queue.hpp"
 #include <variant.hpp>
+#include <fstream>
+#include <functional>
 
 class TcpTransSession : public BasicTcpSession<TcpTransSession>
 {
@@ -37,19 +39,27 @@ protected:
         logErrorLine("Asio Error | ", message, " | ", err);
     }
     
-    ArrayBuffer<512> buffer;
+    ArrayBuffer<16*1024> buffer;
     
     // Buffers
     class TempBufferCollection{
     public:
         struct Empty{};
         struct Echo{ std::string message; };
+        struct File{ std::fstream file; uint32_t fileId; std::streampos end; std::function<void(bool)> callback; };
+        struct CustomFile {std::string path; uint32_t fromEnd;};
     private:
         boost::variant<
             Empty,
-            Echo
+            Echo,
+            File,
+            CustomFile
         > buffer;
     public:
+        template<typename T>
+        bool is(){
+            return buffer.type() == typeid(T);
+        }
         template<typename T>
         auto& set(){
             buffer = T{};
@@ -79,6 +89,18 @@ protected:
     void sendEchoResponse();
     
     
+    // File
+    
+    void startSendFile();
+    void sendFilePart();
+    void completeSendFile(bool);
+    
+    // File Custom
+    
+    void receiveCustomFileRequestHeader();
+    void receiveCustomFileRequestFilepath();
+    void prepareCustomFileToSend();
+    
     #endif // SERVER
     #ifdef CLIENT
     
@@ -91,9 +113,23 @@ protected:
     void handleEchoResponseHeader();
     void handleEchoResponseMessage();
     
+    
+    // File
+    
+    void startReceiveFile();
+    void receiveFilePart();
+    void completeReceiveFile(bool successful);
+    
+    // File Custom
+    public:
+        void sendCustomFileRequest(const std::string& filepath, uint32_t fromEnd, const std::string& save_filepath , std::fstream::openmode opm = std::fstream::out);
+    protected:
+    
     #endif // CLIENT
     
     void completeOperation(){
+        logInfoLine("Completed Operation.");
+        buffer.resetCarret();
         tempBufferCollection.reset();
         #ifdef SERVER
             awaitNewRequest();

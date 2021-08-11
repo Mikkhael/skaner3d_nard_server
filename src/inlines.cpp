@@ -19,3 +19,10 @@ constexpr DatagramId Diag::Mult::Response::Id;
 // TRANS
 
 constexpr DatagramId Trans::Echo::Request::Id;
+
+constexpr DatagramId Trans::FilePart::Id_Start;
+constexpr DatagramId Trans::FilePart::Id_Part;
+constexpr DatagramId Trans::FilePart::Id_Success;
+constexpr DatagramId Trans::FilePart::Id_Fail;
+
+constexpr DatagramId Trans::CustomFile::Request::Id;
