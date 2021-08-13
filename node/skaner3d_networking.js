@@ -79,6 +79,10 @@ class TcpRead {
         this.socket = socket;
         this.socket.pause();
         
+        this.clear();
+    }
+    
+    clear(){
         this.buffer = Buffer.allocUnsafe(0);
         this.bytesRead = 0;
         this.bytesTotal = 0;
@@ -91,43 +95,60 @@ class TcpRead {
     
     read_some(some_buffer){
         if(this.isReady){
+            console.log("BUFF slow");
             this.socket.pause();
             this.leftover_buffer = Buffer.concat(this.leftover_buffer, some_buffer);
+            return;
         }
-        const toRead = this.bytesTotal - this.bytesRead;
-        this.isReady = (toRead <= some_buffer.length);
-        //console.log(`B---1 ${this.bytesRead}, ${this.bytesTotal}, ${this.buffer.length}, ${this.leftover_buffer.length}, ${some_buffer.length}`);
-        if(this.isReady){
+        const bytesLeft = this.bytesTotal - this.bytesRead;
+        const canBeCompleted = (bytesLeft <= some_buffer.length);
+        console.log("BUFF left ", bytesLeft, some_buffer.length, canBeCompleted);
+        if(canBeCompleted){
+            console.log("BUFF pausing ");
             this.socket.pause();
         }
-        
-        some_buffer.copy(this.buffer, this.bytesRead, 0, toRead);
-        this.leftover_buffer = some_buffer.slice(toRead);
-        
-        this.bytesRead += toRead;
-        //console.log(`B---2 ${this.bytesRead}, ${this.bytesTotal}, ${this.buffer.length}, ${this.leftover_buffer.length}, ${some_buffer.length}`);
-        
-        if(this.isReady){
-            this.callback(this.buffer);
+        //console.log("BUFF before ", this.leftover_buffer.length, this.bytesRead);
+        if(bytesLeft > some_buffer.length){
+            some_buffer.copy(this.buffer, this.bytesRead);
+            this.bytesRead += some_buffer.length;
+        }else{
+            some_buffer.copy(this.buffer, this.bytesRead, 0, bytesLeft);
+            this.leftover_buffer = some_buffer.slice(bytesLeft);
+            this.bytesRead += bytesLeft;
+        }
+        console.log("BUFF after readsome ", this.bytesRead, this.leftover_buffer.length);
+        if(canBeCompleted){
+            console.log("BUFF completing ");
+            this.isReady = true;
+            this.callback(this.buffer.slice(0, this.bytesTotal));
         }
     }
     
     read(length, callback) {
-        this.callback = callback;
+        console.log("BUFF toRead ", length);
+        this.isReady = false;
         this.bytesRead = 0;
         this.bytesTotal = length;
-        this.isReady = false;
-        //console.log(`B---0 ${length}`);
         if(this.buffer.length < length){
+            console.log("BUFF resize ", this.buffer.length, length);
             this.buffer = Buffer.allocUnsafe(length);
         }
-        if(this.leftover_buffer.length > 0){
-            //console.log("B--- using leftover");
+        this.callback = callback;
+        
+        if(this.leftover_buffer.length >= length){
+            console.log("BUFF leftover all");
             this.read_some(this.leftover_buffer);
-            if(this.isReady){
-                return;
-            }
+            //this.leftover_buffer = this.leftover_buffer.slice(length);
+            return;
         }
+        if(this.leftover_buffer.length > 0){
+            console.log("BUFF leftover");
+            this.read_some(this.leftover_buffer);
+            this.leftover_buffer = Buffer.allocUnsafe(0);
+        }
+        console.log("BUFF after init read ", this.bytesRead, this.leftover_buffer.length);
+        
+        console.log("BUFF resume");
         this.socket.resume();
     }
 };
@@ -156,17 +177,20 @@ class TcpConnection{
             }
         };
         
+        this._tcpReadBuffer = new TcpRead(this.node_socket);
+        
         this.node_socket.on("error", (err) => {
+            this._tcpReadBuffer.clear();
             this.handlers.socket.error(err);
         });
         this.node_socket.on("connect", () => {
+            this.node_socket.pause();
             this.handlers.socket.connect();
         });
         this.node_socket.on("close", () => {
+            this._tcpReadBuffer.clear();
             this.handlers.socket.close();
         });
-        
-        this._tcpReadBuffer = new TcpRead(this.node_socket);
         
         this.node_socket.on("data", (buffer) => {
             this._tcpReadBuffer.read_some(buffer);
@@ -182,10 +206,12 @@ class TcpConnection{
     
     
     connect(host, port){
+        this._tcpReadBuffer.clear();
         this.node_socket.connect(port, host);
     }
     disconnect(){
         this.node_socket.destroy();
+        this._tcpReadBuffer.clear();
     }
     
     sendEcho(message){
@@ -243,7 +269,7 @@ class TcpConnection{
             }
             
             if(expectedFileid != fileid){
-                //console.log(`E: ${expectedFileid}, ${fileid}`);
+                console.log(`E: ${expectedFileid}, ${fileid}, (${id})`);
                 this.handlers.file.format_error();
                 return;
             }
@@ -257,7 +283,7 @@ class TcpConnection{
                 this.handlers.file.complete();
                 return;
             }else{
-                //console.log(`E2: ${id}`);
+                console.log(`E2: ${id}`);
                 this.handlers.file.format_error();
                 return;
             }

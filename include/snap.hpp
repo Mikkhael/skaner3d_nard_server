@@ -42,7 +42,7 @@ public:
         
         //std::lock_guard<std::mutex> lock{mutex};
         std::ofstream snapFile(snapPath, std::fstream::trunc | std::fstream::out | std::fstream::binary);
-        std::cout << "Snap path: " << snapPath << std::endl;
+        //std::cout << "Snap path: " << snapPath << std::endl;
         if(!snapFile.is_open() || snapFile.fail()){
             callback(false, "Cannot open Snap File");
             return;
@@ -55,7 +55,7 @@ public:
         framePath += std::to_string(frame);
         
         std::ifstream frameFile(framePath, std::fstream::in | std::fstream::binary);
-        std::cout << "Frame path: " << framePath << std::endl;
+        //std::cout << "Frame path: " << framePath << std::endl;
         if(!frameFile.is_open() || frameFile.fail()){
             callback(false, "Cannot open Frame File");
             return;

@@ -68,6 +68,8 @@ tcp.handlers.file.start = (totalFileSize, next) => {
 };
 tcp.handlers.file.part = (data, next) => {
     console.log(`Recived file part with size: ${data.length}`);
+    console.log(`First Bytes: ${Uint8Array.from(data.slice(0,4)).map(x => x.toString(16) + " ")}`);
+    console.log(`Last Bytes: ${Uint8Array.from(data.slice(data.length-4)).map(x => x.toString(16) + " ")}`);
     fs.write(FileTransmissionContext.file_handle, data, (err)=>{
         if(err){
             console.log(`File system error occured: ${err}`);
@@ -170,7 +172,7 @@ function handleOption(prompt, test = false){
         });
     } else if (args[0] == "ts"){
         console.log(`TCP Snapping Frame`);
-        snapFrame();
+        snapFrame(()=>{});
     } else if (args[0] == "stream"){
         console.log(`Starting stream`);
         let callback = (success) =>{
@@ -180,7 +182,7 @@ function handleOption(prompt, test = false){
         }
         snapFrame(callback);
     }  else if (args[0] == "A"){
-        handleOption("tc 127.0.0.1 8888", true);
+        handleOption("tc 192.168.0.111 8888", true);
         setTimeout(() => handleOption("ts"), 1000);
     }
     
