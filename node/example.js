@@ -93,6 +93,7 @@ tcp.handlers.file.format_error = () => {
 
 const framePartFilePath = "./node/newFrame.part.png";
 const frameFilePath = "./node/frame.png";
+let stopStream = false;
 
 function snapFrame(callback){
     fs.open(framePartFilePath, "w", (err, fd) => {
@@ -129,7 +130,8 @@ function getOption(){
     console.log("te - TCP Echo | <message>");
     console.log("tf - TCP File download | <server_filepath> <local_filepath>");
     console.log("ts - TCP Snap Frame");
-    console.log("stream - TCP start streaming");
+    console.log("stream - TCP start streaming | <delay> ");
+    console.log("stopstream - TCP top streaming ");
     console.log("q  - Quit");
     rl.question(">", handleOption);
     
@@ -175,13 +177,19 @@ function handleOption(prompt, test = false){
         snapFrame(()=>{});
     } else if (args[0] == "stream"){
         console.log(`Starting stream`);
+        stopStream = false;
         let callback = (success) =>{
+            const delay = +args[1];
+            if(stopStream) return;
             if(success){
-                setTimeout(()=>{snapFrame(callback)}, 100);
+                setTimeout(()=>{snapFrame(callback)}, delay);
             }
         }
         snapFrame(callback);
-    }  else if (args[0] == "A"){
+    } else if (args[0] == "stopstream"){
+        console.log(`Stopping stream`);
+        stopStream = true;
+    } else if (args[0] == "A"){
         handleOption("tc 192.168.0.111 8888", true);
         setTimeout(() => handleOption("ts"), 1000);
     }

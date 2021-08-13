@@ -95,16 +95,16 @@ class TcpRead {
     
     read_some(some_buffer){
         if(this.isReady){
-            console.log("BUFF slow");
+            //console.log("BUFF slow");
             this.socket.pause();
             this.leftover_buffer = Buffer.concat(this.leftover_buffer, some_buffer);
             return;
         }
         const bytesLeft = this.bytesTotal - this.bytesRead;
         const canBeCompleted = (bytesLeft <= some_buffer.length);
-        console.log("BUFF left ", bytesLeft, some_buffer.length, canBeCompleted);
+        //console.log("BUFF left ", bytesLeft, some_buffer.length, canBeCompleted);
         if(canBeCompleted){
-            console.log("BUFF pausing ");
+            //console.log("BUFF pausing ");
             this.socket.pause();
         }
         //console.log("BUFF before ", this.leftover_buffer.length, this.bytesRead);
@@ -116,39 +116,39 @@ class TcpRead {
             this.leftover_buffer = some_buffer.slice(bytesLeft);
             this.bytesRead += bytesLeft;
         }
-        console.log("BUFF after readsome ", this.bytesRead, this.leftover_buffer.length);
+        //console.log("BUFF after readsome ", this.bytesRead, this.leftover_buffer.length);
         if(canBeCompleted){
-            console.log("BUFF completing ");
+            //console.log("BUFF completing ");
             this.isReady = true;
             this.callback(this.buffer.slice(0, this.bytesTotal));
         }
     }
     
     read(length, callback) {
-        console.log("BUFF toRead ", length);
+        //console.log("BUFF toRead ", length);
         this.isReady = false;
         this.bytesRead = 0;
         this.bytesTotal = length;
         if(this.buffer.length < length){
-            console.log("BUFF resize ", this.buffer.length, length);
+            //console.log("BUFF resize ", this.buffer.length, length);
             this.buffer = Buffer.allocUnsafe(length);
         }
         this.callback = callback;
         
         if(this.leftover_buffer.length >= length){
-            console.log("BUFF leftover all");
+            //console.log("BUFF leftover all");
             this.read_some(this.leftover_buffer);
             //this.leftover_buffer = this.leftover_buffer.slice(length);
             return;
         }
         if(this.leftover_buffer.length > 0){
-            console.log("BUFF leftover");
+            //console.log("BUFF leftover");
             this.read_some(this.leftover_buffer);
             this.leftover_buffer = Buffer.allocUnsafe(0);
         }
-        console.log("BUFF after init read ", this.bytesRead, this.leftover_buffer.length);
+        //console.log("BUFF after init read ", this.bytesRead, this.leftover_buffer.length);
         
-        console.log("BUFF resume");
+        //console.log("BUFF resume");
         this.socket.resume();
     }
 };
@@ -269,7 +269,7 @@ class TcpConnection{
             }
             
             if(expectedFileid != fileid){
-                console.log(`E: ${expectedFileid}, ${fileid}, (${id})`);
+                //console.log(`E: ${expectedFileid}, ${fileid}, (${id})`);
                 this.handlers.file.format_error();
                 return;
             }
@@ -283,7 +283,7 @@ class TcpConnection{
                 this.handlers.file.complete();
                 return;
             }else{
-                console.log(`E2: ${id}`);
+                //console.log(`E2: ${id}`);
                 this.handlers.file.format_error();
                 return;
             }

@@ -27,37 +27,37 @@ class Logger
     std::mutex offlineWriteMutex;
     
     template <class ...T>
-    bool writeToStream(std::ofstream& stream, T&& ...args){
-        if(!stream.is_open() || stream.fail())	{
-			return false;
-		}
+    bool writeToStream(std::ostream& stream, std::ostream& debug_stream, T&& ...args){
+        // if(!stream.is_open() || stream.fail())	{
+		// 	return false;
+		// }
         
-        const std::lock_guard<std::mutex> lock{offlineWriteMutex};
-        fold_ostream(stream, std::forward<T>(args)...);
-        stream.flush(); // Possibly delete
+        // const std::lock_guard<std::mutex> lock{offlineWriteMutex};
+        // fold_ostream(stream, std::forward<T>(args)...);
+        // stream.flush(); // Possibly delete
         
-        #ifdef DEBUG
-            fold_ostream(std::cout, std::forward<T>(args)...);
-        #endif //DEBUG
+        // #ifdef DEBUG
+        //     fold_ostream(std::cout, std::forward<T>(args)...);
+        // #endif //DEBUG
         
-        /*if(ioStrand->context().stopped()){
+        if(ioStrand->context().stopped()){
             const std::lock_guard<std::mutex> lock{offlineWriteMutex};
-            (stream << "(stopped) " << ... << args);
+            fold_ostream(stream, std::forward<T>(args)...);
             stream.flush(); // Possibly delete
             
             #ifdef DEBUG
-                (std::cout << "(stopped) " << ... << args);
+                fold_ostream(debug_stream, std::forward<T>(args)...);
             #endif //DEBUG
         }else{
-            asio::post(*ioStrand, [&stream, args...]{ 
-                (stream << ... << args);
-                stream.flush(); // Possibly delete
+            asio::post(*ioStrand, [&stream, &debug_stream, args...]{ 
+                fold_ostream(stream, args...);
+                //stream.flush(); // Possibly delete
                 
                 #ifdef DEBUG
-                    (std::cout << ... << args);
+                    fold_ostream(debug_stream, args...);
                 #endif //DEBUG
             });
-        }*/
+        }
 		return true;
     }
     
@@ -92,10 +92,10 @@ public:
     }
     
     template <class ...T>
-    auto logInfoLine(T&& ...args) { return writeToStream(infoLogFile,  '[', getTimestamp(), "] ",  args..., '\n'); }
+    auto logInfoLine(T&& ...args) { return writeToStream(infoLogFile, std::cout, '[', getTimestamp(), "] ",  args..., '\n'); }
     
     template <class ...T>
-    auto logErrorLine(T&& ...args){ return writeToStream(errorLogFile, '[', getTimestamp(), "]E ",  args..., '\n'); }
+    auto logErrorLine(T&& ...args){ return writeToStream(errorLogFile, std::cerr, '[', getTimestamp(), "]E ",  args..., '\n'); }
     
 };
 
