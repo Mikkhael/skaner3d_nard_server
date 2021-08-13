@@ -25,6 +25,10 @@ class Config{
         int threads = 1;
         int udpDiagPort = 1234;
         int tcpTransPort = 1234;
+        std::string snapPath = DEV_NULL;
+        std::string fake_framesPath = DEV_NULL;
+        int fake_framesCount = 1;
+        int fake_frameDuration = 1;
     };
     
 public:
@@ -135,6 +139,42 @@ public:
                     parsingErrors += "Cannot parse the value '";
                     parsingErrors += *temp;
                     parsingErrors += "' of tcpTransPort";
+                }
+            }
+        }{
+            const auto temp = getOption("snapPath");
+            if(temp){
+                options.snapPath = *temp;
+            }
+        }{
+            const auto temp = getOption("framesPath");
+            if(temp){
+                options.fake_framesPath = *temp;
+            }
+        }{
+            const auto temp = getOption("framesCount");
+            if(temp){
+                try{
+                    options.fake_framesCount = std::stoi(*temp);
+                }
+                catch(...){
+                    good = false;
+                    parsingErrors += "Cannot parse the value '";
+                    parsingErrors += *temp;
+                    parsingErrors += "' of framesCount";
+                }
+            }
+        }{
+            const auto temp = getOption("frameDuration");
+            if(temp){
+                try{
+                    options.fake_frameDuration = std::stoi(*temp);
+                }
+                catch(...){
+                    good = false;
+                    parsingErrors += "Cannot parse the value '";
+                    parsingErrors += *temp;
+                    parsingErrors += "' of frameDuration";
                 }
             }
         }

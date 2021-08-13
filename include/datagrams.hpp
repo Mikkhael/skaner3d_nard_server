@@ -67,4 +67,11 @@ namespace Trans{
         };
         // Response is the SendComplete response
     }
+    
+    namespace SnapFrame{
+        struct Request{
+            static constexpr DatagramId Id = 140;
+        };
+        // Response is the SendComplete response
+    }
 }

@@ -7,6 +7,7 @@
 #include <config.hpp>
 #include <udp_diag.hpp>
 #include <tcp_transmission.hpp>
+#include <snap.hpp>
 
 #ifdef CLIENT
     #include <ui.hpp>
@@ -47,6 +48,13 @@ try{
         std::cerr << "Cannot open logging files: \n " << config.options.infoLogFilePath << "\n " << config.options.errorLogFilePath << '\n';
         return -1;
     }
+    
+    // Snapper
+    
+    snapper.setSnapPath(config.options.snapPath);
+    #ifdef FAKECAMERA
+    snapper.setFakeCameraConfig(config.options.fake_framesPath, config.options.fake_framesCount, config.options.fake_frameDuration);
+    #endif // FAKECAMERA
     
     // Threads
     

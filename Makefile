@@ -28,7 +28,7 @@ else
 endif
 
 # Additional defines for compilation
-DEFINES  = BOOST_ERROR_CODE_HEADER_ONLY
+DEFINES  = BOOST_ERROR_CODE_HEADER_ONLY FAKECAMERA
 
 # Additional flags for compilation and linking
 CXXFLAGS = -std=c++14 -Wall -Wpedantic

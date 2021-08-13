@@ -53,7 +53,8 @@ tcp.handlers.echo.response = (message) => {
 }
 
 const FileTransmissionContext = {
-    file_handle: null
+    file_handle: null,
+    callback: (success) => {}
 };
 
 tcp.handlers.file.start = (totalFileSize, next) => {
@@ -77,16 +78,42 @@ tcp.handlers.file.part = (data, next) => {
 };
 tcp.handlers.file.complete = () => {
     console.log(`Completed file receive`);
-    fs.closeSync(FileTransmissionContext.file_handle);
+    FileTransmissionContext.callback(true);
 };
 tcp.handlers.file.server_error = () => {
     console.log(`Server file-system error occured during file transmission`);
+    FileTransmissionContext.callback(false);
 }
 tcp.handlers.file.format_error = () => {
     console.log(`Ill-formatted packet received. Closing session.`);
     tcp.disconnect();
 }
 
+const framePartFilePath = "./node/newFrame.part.png";
+const frameFilePath = "./node/frame.png";
+
+function snapFrame(callback){
+    fs.open(framePartFilePath, "w", (err, fd) => {
+        if(err){
+            console.log(`Cannot open file ${framePartFilePath}`);
+            callback(false);
+            return;
+        }
+        FileTransmissionContext.file_handle = fd;
+        FileTransmissionContext.callback = (success) => {
+            fs.closeSync(FileTransmissionContext.file_handle);
+            if(!success){
+                console.log("Failed to download frame");
+                callback(false);
+            }else{
+                console.log("Downloaded frame");
+                fs.copyFileSync(framePartFilePath, frameFilePath);
+                callback(true);
+            }
+        };
+        tcp.sendSnapFrameRequest();
+    });
+}
 
 // Exemple user interface
 
@@ -99,6 +126,8 @@ function getOption(){
     console.log("tx - TCP Disconnect");
     console.log("te - TCP Echo | <message>");
     console.log("tf - TCP File download | <server_filepath> <local_filepath>");
+    console.log("ts - TCP Snap Frame");
+    console.log("stream - TCP start streaming");
     console.log("q  - Quit");
     rl.question(">", handleOption);
     
@@ -134,11 +163,25 @@ function handleOption(prompt, test = false){
                 return;
             }
             FileTransmissionContext.file_handle = fd;
+            FileTransmissionContext.callback = (success) => {
+                fs.closeSync(FileTransmissionContext.file_handle);
+            };
             tcp.sendCustomFileRequest(args[1]);
         });
-    } else if (args[0] == "A"){
+    } else if (args[0] == "ts"){
+        console.log(`TCP Snapping Frame`);
+        snapFrame();
+    } else if (args[0] == "stream"){
+        console.log(`Starting stream`);
+        let callback = (success) =>{
+            if(success){
+                setTimeout(()=>{snapFrame(callback)}, 100);
+            }
+        }
+        snapFrame(callback);
+    }  else if (args[0] == "A"){
         handleOption("tc 127.0.0.1 8888", true);
-        setTimeout(() => handleOption("tf AAA BBB"), 1000);
+        setTimeout(() => handleOption("ts"), 1000);
     }
     
     if(!test)

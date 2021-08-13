@@ -205,6 +205,10 @@ class TcpConnection{
         this.node_socket.write(buffer);
         this._receiveFilePart(0);
     }
+    sendSnapFrameRequest(){
+        this.node_socket.write(new Uint8Array([140]));
+        this._receiveFilePart(0);
+    }
     
     _receiveEchoLength(){
         this._tcpReadBuffer.read(4, buffer => {
@@ -239,7 +243,7 @@ class TcpConnection{
             }
             
             if(expectedFileid != fileid){
-                console.log(`E: ${expectedFileid}, ${fileid}`);
+                //console.log(`E: ${expectedFileid}, ${fileid}`);
                 this.handlers.file.format_error();
                 return;
             }
@@ -253,7 +257,7 @@ class TcpConnection{
                 this.handlers.file.complete();
                 return;
             }else{
-                console.log(`E2: ${id}`);
+                //console.log(`E2: ${id}`);
                 this.handlers.file.format_error();
                 return;
             }

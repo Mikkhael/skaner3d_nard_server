@@ -4,6 +4,7 @@
 
 enum class CustomError {
     None,
+    File,
     FileOpen,
     FileRead,
     FileWrite,
@@ -35,11 +36,12 @@ public:
             category = "custom";
             switch(error){
                 case CustomError::None :        code = 0; message = ""; break;
-                case CustomError::FileOpen :    code = 1; message = "Cannot open file"; break;
-                case CustomError::FileRead :    code = 2; message = "Cannot read from file"; break;
-                case CustomError::FileWrite :   code = 3; message = "Cannot write to file"; break;
-                case CustomError::Critical :    code = 4; message = "Critical server error"; break;
-                case CustomError::Illformated : code = 5; message = "Received data is illformated"; break;
+                case CustomError::File :        code = 1; message = "File System error"; break;
+                case CustomError::FileOpen :    code = 2; message = "Cannot open file"; break;
+                case CustomError::FileRead :    code = 3; message = "Cannot read from file"; break;
+                case CustomError::FileWrite :   code = 4; message = "Cannot write to file"; break;
+                case CustomError::Critical :    code = 5; message = "Critical server error"; break;
+                case CustomError::Illformated : code = 6; message = "Received data is illformated"; break;
             }
         }
         operator bool() const { return code != 0; }

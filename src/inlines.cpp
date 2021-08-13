@@ -1,9 +1,11 @@
 #include <asiolib/logger.hpp>
 #include <config.hpp>
 #include <datagrams.hpp>
+#include <snap.hpp>
 
 Config config;
 Logger logger;
+Snapper snapper;
 
 // DIAG
 
@@ -26,3 +28,5 @@ constexpr DatagramId Trans::FilePart::Id_Success;
 constexpr DatagramId Trans::FilePart::Id_Fail;
 
 constexpr DatagramId Trans::CustomFile::Request::Id;
+
+constexpr DatagramId Trans::SnapFrame::Request::Id;

@@ -1,6 +1,7 @@
 #include <tcp_transmission.hpp>
 #include <datagrams.hpp>
 
+#include "snap.hpp"
 
 #ifdef SERVER
 
@@ -37,6 +38,7 @@ void TcpTransSession::awaitNewRequest(){
         switch(id){
             case Trans::Echo::Request::Id :         me->receiveEchoRequestHeader(); break;
             case Trans::CustomFile::Request::Id :   me->receiveCustomFileRequestHeader(); break;
+            case Trans::SnapFrame::Request::Id :    me->prepareSnapFrame(); break;
             default: {
                 me->logErrorLine("Unknown request id: ", int(id));
                 me->awaitNewRequest();
@@ -250,6 +252,42 @@ void TcpTransSession::prepareCustomFileToSend(){
     }
     tempBuffer.callback = [this](bool){completeOperation();};
     startSendFile();
+}
+
+
+// Snap Frame
+
+void TcpTransSession::prepareSnapFrame(){
+    
+    snapper.snap([me = shared_from_this()](bool success, const char* error_message){
+        if(!success){
+            me->logErrorLine("File system error while snapping: ", error_message);
+            me->operationCompletion.setResult(CustomError::File);
+            Trans::FilePart header;
+            header.fileId = 0;
+            header.partSize = 0;
+            asio::async_write(me->getSocket(), const_buffers_array(
+                    to_buffer_const(Trans::FilePart::Id_Fail),
+                    to_buffer_const(header)
+                ),
+                ASYNC_CALLBACK_NESTED{
+                    if(err){
+                        me->handleError(err, "While completing failed Snap Frame");
+                        return;
+                    }
+                    me->completeOperation();
+                }
+            );
+            return;
+        }
+        auto& tempBuffer = me->tempBufferCollection.set<TempBufferCollection::File>();
+        tempBuffer.file.open(snapper.getSnapFilePath(), std::fstream::in | std::fstream::binary);
+        tempBuffer.file.seekg(0, std::ifstream::end);
+        tempBuffer.end = tempBuffer.file.tellg();
+        tempBuffer.file.seekg(0, std::ifstream::beg);
+        tempBuffer.callback = [me](bool){me->completeOperation();};
+        me->startSendFile();
+    });
 }
 
 

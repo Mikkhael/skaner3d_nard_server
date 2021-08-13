@@ -109,6 +109,11 @@ protected:
     void receiveCustomFileRequestFilepath();
     void prepareCustomFileToSend();
     
+    // Snap Frame
+    
+    void prepareSnapFrame();
+    
+    
     #endif // SERVER
     #ifdef CLIENT
     
