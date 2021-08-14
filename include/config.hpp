@@ -81,105 +81,42 @@ public:
         }
     }
     
-    bool parseOptions(){
-        
-        std::string parsingErrors;
-        bool good = true;
-        
-        {
-            const auto temp = getOption("infoLogFilePath");
-            if(temp){
-                options.infoLogFilePath = *temp;
+    bool loadOptionAsInt(const std::string& name, std::string& errors, int& res){
+        const auto temp = getOption(name);
+        if(temp){
+            try{
+                res = std::stoi(*temp);
             }
-        }{
-            const auto temp = getOption("errorLogFilePath");
-            if(temp){
-                options.errorLogFilePath = *temp;
-            }
-        }{
-            const auto temp = getOption("threads");
-            if(temp){
-                try{
-                    options.threads = std::stoi(*temp);
-                    if(options.threads < 1){
-                        good = false;
-                        parsingErrors += "Threads '";
-                        parsingErrors += std::to_string(options.threads);
-                        parsingErrors += "' cannot be less then 1";
-                    }
-                }
-                catch(...){
-                    good = false;
-                    parsingErrors += "Cannot parse the value '";
-                    parsingErrors += *temp;
-                    parsingErrors += "' of threads";
-                }
-            }
-        }{
-            const auto temp = getOption("udpDiagPort");
-            if(temp){
-                try{
-                    options.udpDiagPort = std::stoi(*temp);
-                }
-                catch(...){
-                    good = false;
-                    parsingErrors += "Cannot parse the value '";
-                    parsingErrors += *temp;
-                    parsingErrors += "' of udpDiagPort";
-                }
-            }
-        }{
-            const auto temp = getOption("tcpTransPort");
-            if(temp){
-                try{
-                    options.tcpTransPort = std::stoi(*temp);
-                }
-                catch(...){
-                    good = false;
-                    parsingErrors += "Cannot parse the value '";
-                    parsingErrors += *temp;
-                    parsingErrors += "' of tcpTransPort";
-                }
-            }
-        }{
-            const auto temp = getOption("snapPath");
-            if(temp){
-                options.snapPath = *temp;
-            }
-        }{
-            const auto temp = getOption("framesPath");
-            if(temp){
-                options.fake_framesPath = *temp;
-            }
-        }{
-            const auto temp = getOption("framesCount");
-            if(temp){
-                try{
-                    options.fake_framesCount = std::stoi(*temp);
-                }
-                catch(...){
-                    good = false;
-                    parsingErrors += "Cannot parse the value '";
-                    parsingErrors += *temp;
-                    parsingErrors += "' of framesCount";
-                }
-            }
-        }{
-            const auto temp = getOption("frameDuration");
-            if(temp){
-                try{
-                    options.fake_frameDuration = std::stoi(*temp);
-                }
-                catch(...){
-                    good = false;
-                    parsingErrors += "Cannot parse the value '";
-                    parsingErrors += *temp;
-                    parsingErrors += "' of frameDuration";
-                }
+            catch(...){
+                errors += "Cannot parse the value '";
+                errors += *temp;
+                errors += "' of ";
+                errors += name;
+                errors += '\n';
+                return false;
             }
         }
-        
-        optionsParsingError = std::move(parsingErrors);
+        return true;
+    }
+    bool loadOptionAsString(const std::string& name, std::string& errors, std::string& res){
+        const auto temp = getOption(name);
+        if(temp){
+            res = *temp;
+        }
+        return true;
+    }
+    
+    bool parseOptions(){
+        bool good = true;
+        good = good && loadOptionAsString("infoLogFilePath", optionsParsingError, options.infoLogFilePath);
+        good = good && loadOptionAsString("errorLogFilePath", optionsParsingError, options.errorLogFilePath);
+        good = good && loadOptionAsInt("threads", optionsParsingError, options.threads);
+        good = good && loadOptionAsInt("udpDiagPort", optionsParsingError, options.udpDiagPort);
+        good = good && loadOptionAsInt("tcpTransPort", optionsParsingError, options.tcpTransPort);
+        good = good && loadOptionAsString("snapPath", optionsParsingError, options.snapPath);
+        good = good && loadOptionAsString("framesPath", optionsParsingError, options.fake_framesPath);
+        good = good && loadOptionAsInt("framesCount", optionsParsingError, options.fake_framesCount);
+        good = good && loadOptionAsInt("frameDuration", optionsParsingError, options.fake_frameDuration);
         return good;
     }
     
