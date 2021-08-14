@@ -33,6 +33,8 @@ protected:
     void handleUdpConfigDevicekGet();
     
     void handleUdpReboot();
+    
+    void handleUdpSnap();
         
 public:
     
@@ -69,6 +71,8 @@ public:
             case Diag::Config::Device::Get::Request::Id: handleUdpConfigDevicekGet(); break;
             
             case Diag::Reboot::Id: handleUdpReboot(); break;
+            
+            case Diag::Snap::Id: handleUdpSnap(); break;
             
             default:{
                 logErrorLine("Unknown id");

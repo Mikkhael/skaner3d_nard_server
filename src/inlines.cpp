@@ -31,6 +31,8 @@ constexpr DatagramId Diag::Config::Device::Get::Response::Id;
 
 constexpr DatagramId Diag::Reboot::Id;
 
+constexpr DatagramId Diag::Snap::Id;
+
 // TRANS
 
 constexpr DatagramId Trans::Echo::Request::Id;
@@ -43,3 +45,7 @@ constexpr DatagramId Trans::FilePart::Id_Fail;
 constexpr DatagramId Trans::CustomFile::Request::Id;
 
 constexpr DatagramId Trans::SnapFrame::Request::Id;
+
+constexpr DatagramId Trans::DownloadSnap::Request::Id;
+constexpr DatagramId Trans::DownloadSnap::Response::Id_Success;
+constexpr DatagramId Trans::DownloadSnap::Response::Id_NotFound;

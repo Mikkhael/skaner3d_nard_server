@@ -79,6 +79,11 @@ namespace Diag{
     struct Reboot{
         static constexpr DatagramId Id = 130;
     };
+    
+    struct Snap{
+        static constexpr DatagramId Id = 200;
+        uint32_t seriesid;
+    };
 }
 
 namespace Trans{
@@ -119,5 +124,17 @@ namespace Trans{
             static constexpr DatagramId Id = 140;
         };
         // Response is the SendComplete response
+    }
+    
+    namespace DownloadSnap{
+        struct Request{
+            static constexpr DatagramId Id = 200;
+            uint32_t seriesid;
+        };
+        struct Response{
+            static constexpr DatagramId Id_Success = 201;
+            static constexpr DatagramId Id_NotFound = 202;
+            // potential file transfer
+        };
     }
 }

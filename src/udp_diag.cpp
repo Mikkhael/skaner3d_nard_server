@@ -1,5 +1,6 @@
 #include <udp_diag.hpp>
 #include <systemManager.hpp>
+#include <snap.hpp>
 
 void UdpDiagHandler::handleUdpPingRequest(){
     buffer.saveObject(Diag::Ping::Response::Id);
@@ -174,6 +175,19 @@ void UdpDiagHandler::handleUdpReboot(){
     systemManager.reboot();
 }
 
+
+void UdpDiagHandler::handleUdpSnap(){
+    Diag::Snap header;
+    buffer.loadObjectCarret(header);
+    snapper.snap([me=shared_from_this(), header](bool successful, std::string err_message){
+        if(successful){
+            me->logInfoLine("Snapping image with seriesid ", header.seriesid, " successful.");
+        } else {
+            me->logErrorLine("Snapping image with seriesid ", header.seriesid, " not successful: ", err_message);
+        }
+        
+    }, header.seriesid);
+}
 
 
 UdpDiagService udpDiagService;

@@ -28,10 +28,12 @@ class Config{
         int udpDiagPort = 1234;
         int tcpTransPort = 1234;
         
-        std::string snapPath = DEV_NULL;
+        std::string snapStreamPath = DEV_NULL;
         std::string fake_framesPath = DEV_NULL;
         int fake_framesCount = 1;
         int fake_frameDuration = 1;
+        
+        std::string snapPrefix = DEV_NULL;
         
         std::string ipSettingsPath = DEV_NULL;
         std::string ipBootSettingsPath = DEV_NULL;
@@ -120,7 +122,8 @@ public:
         good = good && loadOptionAsInt("threads", optionsParsingError, options.threads);
         good = good && loadOptionAsInt("udpDiagPort", optionsParsingError, options.udpDiagPort);
         good = good && loadOptionAsInt("tcpTransPort", optionsParsingError, options.tcpTransPort);
-        good = good && loadOptionAsString("snapPath", optionsParsingError, options.snapPath);
+        good = good && loadOptionAsString("snapStreamPath", optionsParsingError, options.snapStreamPath);
+        good = good && loadOptionAsString("snapPrefix", optionsParsingError, options.snapPrefix);
         good = good && loadOptionAsString("framesPath", optionsParsingError, options.fake_framesPath);
         good = good && loadOptionAsInt("framesCount", optionsParsingError, options.fake_framesCount);
         good = good && loadOptionAsInt("frameDuration", optionsParsingError, options.fake_frameDuration);

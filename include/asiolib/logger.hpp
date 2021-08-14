@@ -9,10 +9,7 @@
 
 #include <ctime>
 #include <iomanip>
-
-#ifdef DEBUG
-    #include <iostream>
-#endif
+#include <iostream>
 
 class Logger
 {

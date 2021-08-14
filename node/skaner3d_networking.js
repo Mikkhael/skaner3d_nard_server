@@ -141,6 +141,13 @@ class UdpSocket{
         this.node_socket.send(buffer, port, address);
     }
     
+    sendSnap(address, port, seriesid){
+        let buffer = Buffer.alloc(1+4);
+        buffer.writeUInt8(200, 0);
+        buffer.writeUInt32LE(seriesid, 1);
+        this.node_socket.send(buffer, port, address);
+    }
+    
     setPort(port){
         this.node_socket.bind(port);
     }
@@ -254,6 +261,10 @@ class TcpConnection{
                 complete: function(){},
                 server_error: function(){},
                 format_error: function(){}
+            },
+            downloadSnap: {
+                response: function(found, next){},
+                format_error: function(){}
             }
         };
         
@@ -316,6 +327,14 @@ class TcpConnection{
         this._receiveFilePart(0);
     }
     
+    sendDownloadSnapRequest(seriesid){
+        let buffer = Buffer.alloc(1+4);
+        buffer.writeUInt8(200, 0);
+        buffer.writeUInt32LE(seriesid, 1);
+        this.node_socket.write(buffer);
+        this._receiveDownloadSnapResponse();
+    }
+    
     _receiveEchoLength(){
         this._tcpReadBuffer.read(4, buffer => {
             let length = buffer.readUInt32LE(0);
@@ -367,6 +386,22 @@ class TcpConnection{
                 this.handlers.file.format_error();
                 return;
             }
+        });
+    }
+    
+    _receiveDownloadSnapResponse(){
+        this._tcpReadBuffer.read(1, buffer => {
+            const res = buffer.readUint8(0);
+            if(res == 201){
+                this.handlers.downloadSnap.response(true, () => {
+                    this._receiveFilePart(0);
+                });
+            }else if(res == 202){
+                this.handlers.downloadSnap.response(false, () => {});
+            }else{
+                this.handlers.downloadSnap.format_error();
+            }
+            
         });
     }
     

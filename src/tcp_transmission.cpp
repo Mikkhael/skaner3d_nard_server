@@ -38,7 +38,8 @@ void TcpTransSession::awaitNewRequest(){
         switch(id){
             case Trans::Echo::Request::Id :         me->receiveEchoRequestHeader(); break;
             case Trans::CustomFile::Request::Id :   me->receiveCustomFileRequestHeader(); break;
-            case Trans::SnapFrame::Request::Id :    me->prepareSnapFrame(); break;
+            case Trans::SnapFrame::Request::Id :    me->prepareStreamSnapFrame(); break;
+            case Trans::DownloadSnap::Request::Id : me->receiveDownloadSnapRequest(); break;
             default: {
                 me->logErrorLine("Unknown request id: ", int(id));
                 me->awaitNewRequest();
@@ -257,9 +258,9 @@ void TcpTransSession::prepareCustomFileToSend(){
 
 // Snap Frame
 
-void TcpTransSession::prepareSnapFrame(){
+void TcpTransSession::prepareStreamSnapFrame(){
     
-    snapper.snap([me = shared_from_this()](bool success, const char* error_message){
+    snapper.snapStream([me = shared_from_this()](bool success, const char* error_message){
         if(!success){
             me->logErrorLine("File system error while snapping: ", error_message);
             me->operationCompletion.setResult(CustomError::File);
@@ -281,7 +282,54 @@ void TcpTransSession::prepareSnapFrame(){
             return;
         }
         auto& tempBuffer = me->tempBufferCollection.set<TempBufferCollection::File>();
-        tempBuffer.file.open(snapper.getSnapFilePath(), std::fstream::in | std::fstream::binary);
+        tempBuffer.file.open(snapper.getSnapStreamFilePath(), std::fstream::in | std::fstream::binary);
+        tempBuffer.file.seekg(0, std::ifstream::end);
+        tempBuffer.end = tempBuffer.file.tellg();
+        tempBuffer.file.seekg(0, std::ifstream::beg);
+        tempBuffer.callback = [me](bool){me->completeOperation();};
+        me->startSendFile();
+    });
+}
+
+// Download Snap
+
+void TcpTransSession::receiveDownloadSnapRequest(){
+    logInfoLine("Receiving Download Snap Request");
+    asio::async_read(getSocket(), buffer.get(sizeof(Trans::DownloadSnap::Request)), ASYNC_CALLBACK{
+        if(err){
+            me->handleError(err, "While receiving Download Snap Request");
+            return;
+        }
+        me->prepareSnapToSend();
+    });
+}
+
+void TcpTransSession::prepareSnapToSend(){
+    Trans::DownloadSnap::Request header;
+    buffer.loadObject(header);
+    logInfoLine("Preparing snap file with seriesid ", header.seriesid);
+    std::ifstream snapFile(snapper.getSnapFilePathForId(header.seriesid), std::fstream::binary);
+    if(!snapFile.good()){
+        logInfoLine("Snap file with seriesid ", header.seriesid, " not found");
+        asio::async_write(getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_NotFound),
+        ASYNC_CALLBACK{
+            if(err){
+                me->handleError(err, "While sending NotFound response for Snap Download");
+                return;
+            }
+            me->completeOperation();
+        });
+        return;
+    }
+    snapFile.close();
+    asio::async_write(getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_Success),
+    ASYNC_CALLBACK_CAPTURE(header){
+        if(err){
+            me->handleError(err, "While sending Success response for Snap Download");
+            return;
+        }
+        auto& tempBuffer = me->tempBufferCollection.set<TempBufferCollection::File>();
+        tempBuffer.file.open(snapper.getSnapFilePathForId(header.seriesid), std::fstream::in | std::fstream::binary);
         tempBuffer.file.seekg(0, std::ifstream::end);
         tempBuffer.end = tempBuffer.file.tellg();
         tempBuffer.file.seekg(0, std::ifstream::beg);

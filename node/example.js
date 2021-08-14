@@ -65,10 +65,46 @@ tcp.handlers.echo.response = (message) => {
     console.log(`Received Echo response with message: ${message}`);
 }
 
+
+tcp.handlers.downloadSnap.response = (found, next) => {
+    if(found){
+        console.log(`Found snap with seriesid ${DownloadSnapContext.seriesid}`);
+        const downloadPath = `snap_${DownloadSnapContext.seriesid}.png`;
+        fs.open(downloadPath, "w", (err, fd) => {
+            if(err){
+                console.log(`Cannot open file ${downloadPath}. Closing session.`);
+                tcp.disconnect();
+                return;
+            }
+            FileTransmissionContext.file_handle = fd;
+            FileTransmissionContext.callback = (success) => {
+                fs.closeSync(FileTransmissionContext.file_handle);
+                if(!success){
+                    console.log("Failed to download snap due to server error");
+                }else{
+                    console.log("Downloaded snap successfully");
+                }
+            };
+            next();
+        });
+    }else{
+        console.log(`Snap with seriesid ${DownloadSnapContext.seriesid} does not exist`);
+    }
+}
+tcp.handlers.downloadSnap.format_error = () => {
+    console.log(`Received incorect segment format during downloading snap. Closing session.`);
+    tcp.disconnect();
+}
+
+const DownloadSnapContext = {
+    seriesid: 0
+};
+
 const FileTransmissionContext = {
     file_handle: null,
     callback: (success) => {}
 };
+
 
 tcp.handlers.file.start = (totalFileSize, next) => {
     console.log(`Begining to download file with total size: ${totalFileSize}`);
@@ -133,8 +169,7 @@ function snapFrame(callback){
 
 // Exemple user interface
 
-function getOption(){
-    
+function printMenu(){
     console.log("==== Menu ==== ");
     console.log("dp - Udp Ping | <address> <port>");
     console.log("de - Udp Echo | <address> <port> <message>");
@@ -142,16 +177,20 @@ function getOption(){
     console.log("dcds - Udp Config Device Set | <address> <port> <value>");
     console.log("dcdg - Udp Config Device Get | <address> <port>");
     console.log("dr - Udp Reboot | <address> <port>");
+    console.log("ds - Udp SNAP | <address> <port> <seriesid>");
     console.log("tc - TCP Connect to server | <address> <port>");
     console.log("tx - TCP Disconnect");
     console.log("te - TCP Echo | <message>");
     console.log("tf - TCP File download | <server_filepath> <local_filepath>");
     console.log("ts - TCP Snap Frame");
+    console.log("td - TCP Download Snap | <seriesid> ");
     console.log("stream - TCP start streaming | <delay> ");
     console.log("stopstream - TCP top streaming ");
     console.log("q  - Quit");
+}
+
+function getOption(){
     rl.question(">", handleOption);
-    
 }
 
 function handleOption(prompt, test = false){
@@ -161,6 +200,8 @@ function handleOption(prompt, test = false){
         tcp.disconnect();
         rl.close();
         return;
+    }else if(args[0] == "h"){
+        printMenu();
     }else if(args[0] == "dp"){
         console.log(`Sending UDP Ping request to ${args[1]}:${args[2]}`)
         udp.sendPing( args[1], parseInt(args[2]) );
@@ -179,6 +220,9 @@ function handleOption(prompt, test = false){
     } else if (args[0] == "dr") {
         console.log("Rebooting device");
         udp.sendReboot(args[1], args[2]);
+    } else if (args[0] == "ds") {
+        console.log(`Sending SNAP Request with seriesid=${+args[3]}`);
+        udp.sendSnap(args[1], args[2], +args[3]);
     } else if (args[0] == "tc"){
         console.log(`Connecting to TCP Server to ${args[1]}:${args[2]}`);
         tcp.connect( args[1], parseInt(args[2]) );
@@ -204,6 +248,10 @@ function handleOption(prompt, test = false){
     } else if (args[0] == "ts"){
         console.log(`TCP Snapping Frame`);
         snapFrame(()=>{});
+    } else if (args[0] == "td"){
+        DownloadSnapContext.seriesid = +args[1];
+        console.log(`TCP Downloading snap with seriesid ${DownloadSnapContext.seriesid}`);
+        tcp.sendDownloadSnapRequest(DownloadSnapContext.seriesid);
     } else if (args[0] == "stream"){
         console.log(`Starting stream`);
         stopStream = false;
@@ -227,4 +275,5 @@ function handleOption(prompt, test = false){
         setTimeout(getOption, 300);
 }
 
+console.log("Type 'h' to show help");
 setTimeout(getOption, 1000);

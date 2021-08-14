@@ -6,7 +6,8 @@
 class Snapper{
     
     //std::mutex mutex;
-    std::string snapPath;
+    std::string snapStreamPath;
+    std::string snapPrefix;
     
     #ifdef FAKECAMERA
     
@@ -16,37 +17,10 @@ class Snapper{
     
     #endif // FAKECAMERA
     
-public:
     
-    #ifdef FAKECAMERA
-    
-    void setFakeCameraConfig(const std::string& framesPath, int framesCount, int frameDuration){
-        this->framesPath = framesPath;
-        this->framesCount = framesCount;
-        this->frameDuration = frameDuration;
-    }
-    
-    #endif // FAKECAMERA
-    
-    void setSnapPath(const std::string& path){
-        snapPath = path;
-    }
-    std::string getSnapFilePath(){
-        return snapPath;
-    }
-    
-    template<typename Callback> 
-    void snap(Callback callback){
-        
+    template<typename Callback>
+    void snap_impl(Callback callback, std::ostream& destStream){
         #ifdef FAKECAMERA
-        
-        //std::lock_guard<std::mutex> lock{mutex};
-        std::ofstream snapFile(snapPath, std::fstream::trunc | std::fstream::out | std::fstream::binary);
-        //std::cout << "Snap path: " << snapPath << std::endl;
-        if(!snapFile.is_open() || snapFile.fail()){
-            callback(false, "Cannot open Snap File");
-            return;
-        }
         
         auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
         int frame = (time % (frameDuration * framesCount)) / frameDuration;
@@ -61,12 +35,12 @@ public:
             return;
         }
         
-        snapFile << frameFile.rdbuf();
+        destStream << frameFile.rdbuf();
         
-        if(!snapFile || !frameFile){
+        if(!destStream || !frameFile){
             callback(false, "Unsucessful copy");
         }
-        snapFile.flush();
+        destStream.flush();
         
         callback(true, "");
         
@@ -75,7 +49,49 @@ public:
         callback(false, "");
         
         #endif // FAKECAMERA
-        
+    }
+    
+public:
+    
+    #ifdef FAKECAMERA
+    
+    void setFakeCameraConfig(const std::string& framesPath, int framesCount, int frameDuration){
+        this->framesPath = framesPath;
+        this->framesCount = framesCount;
+        this->frameDuration = frameDuration;
+    }
+    
+    #endif // FAKECAMERA
+    
+    void setConfig(const std::string& snapStreamPath, const std::string& snapPrefix){
+        this->snapStreamPath = snapStreamPath;
+        this->snapPrefix = snapPrefix;
+    }
+    std::string getSnapStreamFilePath(){
+        return snapStreamPath;
+    }
+    std::string getSnapFilePathForId(uint32_t seriesid){
+        return snapPrefix + std::to_string(seriesid);;
+    }
+    
+    template<typename Callback> 
+    void snapStream(Callback&& callback){
+        std::ofstream snapFile(snapStreamPath, std::fstream::trunc | std::fstream::out | std::fstream::binary);
+        if(!snapFile.is_open() || snapFile.fail()){
+            callback(false, "Cannot open Stream Snap File");
+            return;
+        }
+        snap_impl(callback, snapFile);
+    }
+    template<typename Callback> 
+    void snap(Callback&& callback, uint32_t seriesid){
+        std::string snapFilePath = getSnapFilePathForId(seriesid);
+        std::ofstream snapFile(snapFilePath, std::fstream::trunc | std::fstream::out | std::fstream::binary);
+        if(!snapFile.is_open() || snapFile.fail()){
+            callback(false, "Cannot open Snap File");
+            return;
+        }
+        snap_impl(callback, snapFile);
     }
     
 };

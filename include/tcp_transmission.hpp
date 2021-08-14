@@ -109,9 +109,14 @@ protected:
     void receiveCustomFileRequestFilepath();
     void prepareCustomFileToSend();
     
-    // Snap Frame
+    // Stream Snap Frame
     
-    void prepareSnapFrame();
+    void prepareStreamSnapFrame();
+    
+    // Download Snap
+    
+    void receiveDownloadSnapRequest();
+    void prepareSnapToSend();
     
     
     #endif // SERVER

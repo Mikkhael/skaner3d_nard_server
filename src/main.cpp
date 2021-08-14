@@ -52,7 +52,7 @@ try{
     
     // Snapper
     
-    snapper.setSnapPath(config.options.snapPath);
+    snapper.setConfig(config.options.snapStreamPath, config.options.snapPrefix);
     #ifdef FAKECAMERA
     snapper.setFakeCameraConfig(config.options.fake_framesPath, config.options.fake_framesCount, config.options.fake_frameDuration);
     #endif // FAKECAMERA
