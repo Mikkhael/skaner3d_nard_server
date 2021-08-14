@@ -1,6 +1,21 @@
 //////////// UDP
 const dgram = require("dgram");
 
+function StringToIp(string){
+    const base = 256;
+    let parts = string.split('.');
+    let res = 0;
+    let pow = 1;
+    res += parts[3] * pow; pow *= base;
+    res += parts[2] * pow; pow *= base;
+    res += parts[1] * pow; pow *= base;
+    res += parts[0] * pow;
+    if(!Number.isInteger(res)){
+        throw "ayaya";
+    }
+    return res;
+}
+
 class UdpSocket{
     constructor(port = 0){
         this.node_socket = dgram.createSocket("udp4");
@@ -19,6 +34,21 @@ class UdpSocket{
             },
             echo: {
                 response: function(message, rinfo){}
+            },
+            config: {
+                network: {
+                    set: {
+                        response: function(status, rinfo){}
+                    }
+                },
+                device: {
+                    set: {
+                        response: function(status, rinfo){}
+                    },
+                    get: {
+                        response: function(value, rinfo){}
+                    }
+                }
             }
         };
         
@@ -43,6 +73,27 @@ class UdpSocket{
                     this.handlers.echo.response(message, rinfo);
                     break;
                 }
+                case 101: {
+                    this.handlers.config.network.set.response(true, rinfo);
+                    break;
+                }
+                case 102:{
+                    this.handlers.config.network.set.response(false, rinfo);
+                    break;
+                }
+                case 111: {
+                    this.handlers.config.device.set.response(true, rinfo);
+                    break;
+                }
+                case 112:{
+                    this.handlers.config.device.set.response(false, rinfo);
+                    break;
+                }
+                case 121: {
+                    const message = buffer.slice(1).toString();
+                    this.handlers.config.device.get.response(message, rinfo);
+                    break;
+                }
                 default: {
                     this.handlers.other_error.unknown_id(id, rinfo);
                 }
@@ -58,6 +109,35 @@ class UdpSocket{
     
     sendEcho(address, port, message){
         let buffer = new Uint8Array([12, ...message.split("").map(x => x.charCodeAt(x))]);
+        this.node_socket.send(buffer, port, address);
+    }
+    
+    sendConfigNetworkSet(address, port, ip, mask, gateway, dns1, dns2, isDynamic){
+        let buffer = Buffer.alloc(1+6*4);
+        buffer.writeUInt8(100, 0);
+        buffer.writeUInt32LE(StringToIp(ip), 1);
+        buffer.writeUInt32LE(StringToIp(mask), 5);
+        buffer.writeUInt32LE(StringToIp(gateway), 9);
+        buffer.writeUInt32LE(StringToIp(dns1), 13);
+        buffer.writeUInt32LE(StringToIp(dns2), 17);
+        buffer.writeUInt32LE(isDynamic ? 1 : 0, 21);
+        this.node_socket.send(buffer, port, address);
+    }
+    
+    sendConfigDeviceSet(address, port, config){
+        let buffer = Buffer.alloc(1+config.length);
+        buffer.writeUInt8(110, 0);
+        buffer.write(config, 1);
+        this.node_socket.send(buffer, port, address);
+    }
+    
+    sendConfigDeviceGet(address, port){
+        let buffer = new Uint8Array([120]);
+        this.node_socket.send(buffer, port, address);
+    }
+    
+    sendReboot(address, port){
+        let buffer = new Uint8Array([130]);
         this.node_socket.send(buffer, port, address);
     }
     

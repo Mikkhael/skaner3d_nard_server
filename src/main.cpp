@@ -8,6 +8,7 @@
 #include <udp_diag.hpp>
 #include <tcp_transmission.hpp>
 #include <snap.hpp>
+#include <systemManager.hpp>
 
 #ifdef CLIENT
     #include <ui.hpp>
@@ -56,6 +57,10 @@ try{
     snapper.setFakeCameraConfig(config.options.fake_framesPath, config.options.fake_framesCount, config.options.fake_frameDuration);
     #endif // FAKECAMERA
     
+    // System
+    
+    systemManager.setConfig(ioContext, config.options.ipSettingsPath, config.options.ipBootSettingsPath, config.options.customSettingsPath);
+    
     // Threads
     
     const int additionalThreads = config.options.threads-1;
@@ -67,13 +72,16 @@ try{
     
     #ifdef SERVER
     
-    if(!udpDiagService.start(ioContext, config.options.udpDiagPort)){
+    udpDiagService.setContext(ioContext);
+    tcpTransServerService.setContext(ioContext);
+    
+    if(!udpDiagService.start(config.options.udpDiagPort)){
         logger.logErrorLine("Cannot start UDP DIAG Server: ", udpDiagService.getError());
         return -1;
     }
     logger.logInfoLine("Started UDP DIAG Server on port ", udpDiagService.server().getPort());
     
-    if(!tcpTransServerService.start(ioContext, config.options.tcpTransPort)){
+    if(!tcpTransServerService.start(config.options.tcpTransPort)){
         logger.logErrorLine("Cannot start TCP TRANS Server: ", tcpTransServerService.getError());
         return -1;
     }
@@ -83,7 +91,6 @@ try{
     #ifdef CLIENT
     
     asio::executor_work_guard<asio::io_context::executor_type> workGuard(ioContext.get_executor());
-    
     UI userInterface(ioContext);
     userInterface.start(workGuard);
     
@@ -131,5 +138,15 @@ try{
 }catch(std::exception& e){
     std::cout << "!! Uncought exception !! : " << e.what() << std::endl;
 }
+    
+    if(systemManager.shouldReboot){
+        std::cout << "Issueing reboot...\n";
+        #ifdef NARD
+            system("reboot");
+        #else
+            system("echo Rebooting test");
+        #endif // NARD
+    }
+    
     return 0;
 }

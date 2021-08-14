@@ -195,6 +195,8 @@ public:
 };
 
 class TcpTransServerService{
+    
+    asio::io_context *ioContext = nullptr;
     boost::optional<TcpTransServer> m_server;
     
     Error err;
@@ -206,8 +208,12 @@ public:
     
     auto getError() {return err;}
     
-    bool start(asio::io_context& ioContext, const int port){
-        m_server.emplace(ioContext);
+    void setContext(asio::io_context& ioContext){
+        this->ioContext = &ioContext;
+    }
+    
+    bool start(const int port){
+        m_server.emplace(*ioContext);
         if(!m_server->startServer(port)){
             err = m_server->getError();
             return false;

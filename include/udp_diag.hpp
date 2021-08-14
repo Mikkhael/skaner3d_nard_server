@@ -25,6 +25,14 @@ protected:
     
     void handleUdpMultRequest();
     void handleUdpMultResponse();
+    
+    void handleUdpConfigNetworkSet();
+    
+    void handleUdpConfigDevicekSet();
+    
+    void handleUdpConfigDevicekGet();
+    
+    void handleUdpReboot();
         
 public:
     
@@ -55,6 +63,12 @@ public:
             
             case Diag::Mult::Request::Id:  handleUdpMultRequest();  break;
             case Diag::Mult::Response::Id: handleUdpMultResponse(); break;
+            
+            case Diag::Config::Network::Set::Request::Id: handleUdpConfigNetworkSet(); break;
+            case Diag::Config::Device::Set::Request::Id: handleUdpConfigDevicekSet(); break;
+            case Diag::Config::Device::Get::Request::Id: handleUdpConfigDevicekGet(); break;
+            
+            case Diag::Reboot::Id: handleUdpReboot(); break;
             
             default:{
                 logErrorLine("Unknown id");
@@ -97,6 +111,7 @@ public:
 
 class UdpDiagService{
     
+    asio::io_context *ioContext;
     boost::optional<UdpDiagServer> m_server;
     
     Error err;
@@ -108,8 +123,12 @@ public:
     auto& server() {return *m_server;}
     auto& socket() {return m_server->getSocket();}
     
-    bool start(asio::io_context& ioContext, const int port = 0){
-        m_server.emplace(ioContext);
+    void setContext(asio::io_context& ioContext){
+        this->ioContext = &ioContext;
+    }
+    
+    bool start(const int port = 0){
+        m_server.emplace(*ioContext);
         if(!m_server->startServer(port)){
             err = m_server->getError();
             return false;

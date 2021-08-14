@@ -33,6 +33,52 @@ namespace Diag{
             int32_t result;
         };
     }
+    
+    namespace Config{
+        namespace Network{
+            namespace Set{
+                struct Request{
+                    static constexpr DatagramId Id = 100;
+                    uint32_t ip;
+                    uint32_t mask;
+                    uint32_t gateway;
+                    uint32_t dns1;
+                    uint32_t dns2;
+                    uint32_t isDynamic;
+                };
+                struct Response{
+                    static constexpr DatagramId Id_Success = 101;
+                    static constexpr DatagramId Id_Fail = 102;
+                };
+            }
+        }
+        namespace Device{
+            
+            namespace Set{
+                struct Request{
+                    static constexpr DatagramId Id = 110;
+                    // char []
+                };
+                struct Response{
+                    static constexpr DatagramId Id_Success = 111;
+                    static constexpr DatagramId Id_Fail = 112;
+                };
+            }
+            namespace Get{
+                struct Request{
+                    static constexpr DatagramId Id = 120;
+                };
+                struct Response{
+                    static constexpr DatagramId Id = 121;
+                    // char []
+                };
+            }
+        }
+    }
+    
+    struct Reboot{
+        static constexpr DatagramId Id = 130;
+    };
 }
 
 namespace Trans{

@@ -22,13 +22,20 @@ class Config{
     public: 
         std::string infoLogFilePath  = DEV_NULL;
         std::string errorLogFilePath = DEV_NULL;
+        
         int threads = 1;
+        
         int udpDiagPort = 1234;
         int tcpTransPort = 1234;
+        
         std::string snapPath = DEV_NULL;
         std::string fake_framesPath = DEV_NULL;
         int fake_framesCount = 1;
         int fake_frameDuration = 1;
+        
+        std::string ipSettingsPath = DEV_NULL;
+        std::string ipBootSettingsPath = DEV_NULL;
+        std::string customSettingsPath = DEV_NULL;
     };
     
 public:
@@ -117,6 +124,9 @@ public:
         good = good && loadOptionAsString("framesPath", optionsParsingError, options.fake_framesPath);
         good = good && loadOptionAsInt("framesCount", optionsParsingError, options.fake_framesCount);
         good = good && loadOptionAsInt("frameDuration", optionsParsingError, options.fake_frameDuration);
+        good = good && loadOptionAsString("ipSettingsPath", optionsParsingError, options.ipSettingsPath);
+        good = good && loadOptionAsString("ipBootSettingsPath", optionsParsingError, options.ipBootSettingsPath);
+        good = good && loadOptionAsString("customSettingsPath", optionsParsingError, options.customSettingsPath);
         return good;
     }
     

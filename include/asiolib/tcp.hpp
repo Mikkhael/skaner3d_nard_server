@@ -25,6 +25,7 @@ protected:
     virtual void HandleError_CannotBindAcceptor(const Error& err) {};
     virtual void HandleError_GettingRemoteEndpoint(const Error& err) {};
     
+    std::vector<std::weak_ptr<Session> > sessionsPtrs;
     
 public:
     
@@ -39,6 +40,13 @@ public:
         isRunning = false;
         acceptor.cancel(ignored);
         acceptor.close(ignored);
+        for(auto& sessionPtr : sessionsPtrs){
+            auto session = sessionPtr.lock();
+            if(session){
+                session->closeSession();
+            }
+        }
+        sessionsPtrs.clear();
     }
     
     bool startServer(const int port){
@@ -73,6 +81,7 @@ private:
     
     void awaitNewConnection(){
         auto newSession = std::make_shared<Session>(ioContext);
+        sessionsPtrs.emplace_back(newSession);
         
 		acceptor.async_accept( newSession->getSocket(), newSession->remoteEndpoint, [this, newSession](const Error& err){
 			handleNewConnection(*newSession, err);

@@ -33,6 +33,19 @@ udp.handlers.echo.response = (message, rinfo) => {
     console.log(`Received Echo response from ${rinfo.address}:${rinfo.port} with message: ${message}`);
 }
 
+udp.handlers.config.network.set.response = (status, rinfo) => {
+    console.log(`Setting new network config on device ${rinfo.address}:${rinfo.port}`+
+    ` completed ${status == 0 ? "not " : ""}successfully`);
+}
+//udp.handlers.config.network.get.response = NOT IMPLEMENTED YET
+udp.handlers.config.device.set.response = (status, rinfo) => {
+    console.log(`Setting new device config on device ${rinfo.address}:${rinfo.port}`+
+    ` completed ${status == 0 ? "not " : ""}successfully`);
+}
+udp.handlers.config.device.get.response = (value, rinfo) => {
+    console.log(`Device config of device ${rinfo.address}:${rinfo.port} is: ${value}`);
+}
+
 /// Tcp
 
 const tcp = new skanernet.TcpConnection();
@@ -125,6 +138,10 @@ function getOption(){
     console.log("==== Menu ==== ");
     console.log("dp - Udp Ping | <address> <port>");
     console.log("de - Udp Echo | <address> <port> <message>");
+    console.log("dcns - Udp Config Network Set | <address> <port> <ip> <mask> <gateway> <dns1> <dns2> <isDynamic(y/n)>");
+    console.log("dcds - Udp Config Device Set | <address> <port> <value>");
+    console.log("dcdg - Udp Config Device Get | <address> <port>");
+    console.log("dr - Udp Reboot | <address> <port>");
     console.log("tc - TCP Connect to server | <address> <port>");
     console.log("tx - TCP Disconnect");
     console.log("te - TCP Echo | <message>");
@@ -150,6 +167,18 @@ function handleOption(prompt, test = false){
     } else if (args[0] == "de"){
         console.log(`Sending UDP Echo request to ${args[1]}:${args[2]} with message ${args[3]}`)
         udp.sendEcho( args[1], parseInt(args[2]), args[3] );
+    } else if (args[0] == "dcns") {
+        console.log("Setting new network config");
+        udp.sendConfigNetworkSet(args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]=='y');
+    } else if (args[0] == "dcds") {
+        console.log("Setting new device config");
+        udp.sendConfigDeviceSet(args[1], args[2], args[3]);
+    } else if (args[0] == "dcdg") {
+        console.log("Getting device config");
+        udp.sendConfigDeviceGet(args[1], args[2]);
+    } else if (args[0] == "dr") {
+        console.log("Rebooting device");
+        udp.sendReboot(args[1], args[2]);
     } else if (args[0] == "tc"){
         console.log(`Connecting to TCP Server to ${args[1]}:${args[2]}`);
         tcp.connect( args[1], parseInt(args[2]) );
