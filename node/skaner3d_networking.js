@@ -246,25 +246,25 @@ class TcpConnection{
         
         this.handlers = {
             socket: {
-                error: function(err){},
-                close: function(){},
-                connect: function(){}
+                error: function(tcp, err){},
+                close: function(tcp){},
+                connect: function(tcp){}
             },
             other_error: {
             },
             echo: {
-                response: function(message, rinfo){}
+                response: function(tcp, message, rinfo){}
             },
             file: {
-                start: function(totalSize, next){},
-                part: function(buffer, next){},
-                complete: function(){},
-                server_error: function(){},
-                format_error: function(){}
+                start: function(tcp, totalSize, next){},
+                part: function(tcp, buffer, next){},
+                complete: function(tcp){},
+                server_error: function(tcp){},
+                format_error: function(tcp){}
             },
             downloadSnap: {
-                response: function(found, next){},
-                format_error: function(){}
+                response: function(tcp, found, next){},
+                format_error: function(tcp){}
             }
         };
         
@@ -272,15 +272,15 @@ class TcpConnection{
         
         this.node_socket.on("error", (err) => {
             this._tcpReadBuffer.clear();
-            this.handlers.socket.error(err);
+            this.handlers.socket.error(this, err);
         });
         this.node_socket.on("connect", () => {
             this.node_socket.pause();
-            this.handlers.socket.connect();
+            this.handlers.socket.connect(this);
         });
         this.node_socket.on("close", () => {
             this._tcpReadBuffer.clear();
-            this.handlers.socket.close();
+            this.handlers.socket.close(this);
         });
         
         this.node_socket.on("data", (buffer) => {
@@ -344,7 +344,7 @@ class TcpConnection{
     _receiveEchoMessage(length){
         this._tcpReadBuffer.read(length, buffer => {
             let message = buffer.toString();
-            this.handlers.echo.response(message);
+            this.handlers.echo.response(this, message);
         });
     }
     
@@ -359,31 +359,31 @@ class TcpConnection{
             };
             
             if(id == 120){
-                this.handlers.file.start(size, next);
+                this.handlers.file.start(this, size, next);
                 return;
             }
             if(id == 123){
-                this.handlers.file.server_error();
+                this.handlers.file.server_error(this);
                 return;
             }
             
             if(expectedFileid != fileid){
                 //console.log(`E: ${expectedFileid}, ${fileid}, (${id})`);
-                this.handlers.file.format_error();
+                this.handlers.file.format_error(this);
                 return;
             }
             
             if(id == 121){
                 this._tcpReadBuffer.read(size, data => {
-                    this.handlers.file.part(data, next);
+                    this.handlers.file.part(this, data, next);
                 });
                 return;
             }else if(id == 122){
-                this.handlers.file.complete();
+                this.handlers.file.complete(this);
                 return;
             }else{
                 //console.log(`E2: ${id}`);
-                this.handlers.file.format_error();
+                this.handlers.file.format_error(this);
                 return;
             }
         });
@@ -393,13 +393,13 @@ class TcpConnection{
         this._tcpReadBuffer.read(1, buffer => {
             const res = buffer.readUint8(0);
             if(res == 201){
-                this.handlers.downloadSnap.response(true, () => {
+                this.handlers.downloadSnap.response(this, true, () => {
                     this._receiveFilePart(0);
                 });
             }else if(res == 202){
-                this.handlers.downloadSnap.response(false, () => {});
+                this.handlers.downloadSnap.response(this, false, () => {});
             }else{
-                this.handlers.downloadSnap.format_error();
+                this.handlers.downloadSnap.format_error(this);
             }
             
         });

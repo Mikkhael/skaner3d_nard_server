@@ -50,23 +50,23 @@ udp.handlers.config.device.get.response = (value, rinfo) => {
 
 const tcp = new skanernet.TcpConnection();
 
-tcp.handlers.socket.connect = () => {
+tcp.handlers.socket.connect = (tcp) => {
     console.log(`TCP Socket connected to ${tcp.getAddress()}:${tcp.getPort()}`);
 }
-tcp.handlers.socket.close = () => {
+tcp.handlers.socket.close = (tcp) => {
     console.log(`TCP Socket closed.`);
 }
 
-tcp.handlers.socket.error = (err) => {
+tcp.handlers.socket.error = (tcp, err) => {
     console.log(`TCP Socket error occured: ${err}`);
 }
 
-tcp.handlers.echo.response = (message) => {
+tcp.handlers.echo.response = (tcp, message) => {
     console.log(`Received Echo response with message: ${message}`);
 }
 
 
-tcp.handlers.downloadSnap.response = (found, next) => {
+tcp.handlers.downloadSnap.response = (tcp, found, next) => {
     if(found){
         console.log(`Found snap with seriesid ${DownloadSnapContext.seriesid}`);
         const downloadPath = `snap_${DownloadSnapContext.seriesid}.png`;
@@ -91,7 +91,7 @@ tcp.handlers.downloadSnap.response = (found, next) => {
         console.log(`Snap with seriesid ${DownloadSnapContext.seriesid} does not exist`);
     }
 }
-tcp.handlers.downloadSnap.format_error = () => {
+tcp.handlers.downloadSnap.format_error = (tcp) => {
     console.log(`Received incorect segment format during downloading snap. Closing session.`);
     tcp.disconnect();
 }
@@ -106,7 +106,7 @@ const FileTransmissionContext = {
 };
 
 
-tcp.handlers.file.start = (totalFileSize, next) => {
+tcp.handlers.file.start = (tcp, totalFileSize, next) => {
     console.log(`Begining to download file with total size: ${totalFileSize}`);
     if(totalFileSize > 999999999999999999999){
         console.log(`File size is to big. Closing session.`);
@@ -115,7 +115,7 @@ tcp.handlers.file.start = (totalFileSize, next) => {
         next();
     }
 };
-tcp.handlers.file.part = (data, next) => {
+tcp.handlers.file.part = (tcp, data, next) => {
     console.log(`Recived file part with size: ${data.length}`);
     console.log(`First Bytes: ${Uint8Array.from(data.slice(0,4)).map(x => x.toString(16) + " ")}`);
     console.log(`Last Bytes: ${Uint8Array.from(data.slice(data.length-4)).map(x => x.toString(16) + " ")}`);
@@ -127,15 +127,15 @@ tcp.handlers.file.part = (data, next) => {
         }
     });
 };
-tcp.handlers.file.complete = () => {
+tcp.handlers.file.complete = (tcp) => {
     console.log(`Completed file receive`);
     FileTransmissionContext.callback(true);
 };
-tcp.handlers.file.server_error = () => {
+tcp.handlers.file.server_error = (tcp) => {
     console.log(`Server file-system error occured during file transmission`);
     FileTransmissionContext.callback(false);
 }
-tcp.handlers.file.format_error = () => {
+tcp.handlers.file.format_error = (tcp) => {
     console.log(`Ill-formatted packet received. Closing session.`);
     tcp.disconnect();
 }
