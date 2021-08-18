@@ -5,6 +5,7 @@
 #include "async_request_queue.hpp"
 #include <variant.hpp>
 #include <fstream>
+#include <istream>
 #include <functional>
 
 #include "operationCompletion.hpp"
@@ -47,14 +48,14 @@ protected:
         operationCompletion.complete();
     }
     
-    ArrayBuffer<16*1024> buffer;
+    ArrayBuffer<30*1024> buffer;
     
     // Buffers
     class TempBufferCollection{
     public:
         struct Empty{};
         struct Echo{ std::string message; };
-        struct File{ std::fstream file; uint32_t fileId; std::streampos end; std::function<void(bool)> callback; };
+        struct File{ std::shared_ptr<std::istream> istream; uint32_t fileId; std::streampos end; std::function<void(bool)> callback; };
         struct CustomFile {std::string path; uint32_t fromEnd;};
     private:
         boost::variant<

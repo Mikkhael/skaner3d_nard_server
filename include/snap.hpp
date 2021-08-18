@@ -2,11 +2,10 @@
 #include <string>
 #include <mutex>
 #include <fstream>
-
+#include <sstream>
 class Snapper{
     
     //std::mutex mutex;
-    std::string snapStreamPath;
     std::string snapPrefix;
     
     #ifdef FAKECAMERA
@@ -63,25 +62,16 @@ public:
     
     #endif // FAKECAMERA
     
-    void setConfig(const std::string& snapStreamPath, const std::string& snapPrefix){
-        this->snapStreamPath = snapStreamPath;
+    void setConfig(const std::string& snapPrefix){
         this->snapPrefix = snapPrefix;
     }
-    std::string getSnapStreamFilePath(){
-        return snapStreamPath;
-    }
     std::string getSnapFilePathForId(uint32_t seriesid){
-        return snapPrefix + std::to_string(seriesid);;
+        return snapPrefix + std::to_string(seriesid);
     }
     
-    template<typename Callback> 
-    void snapStream(Callback&& callback){
-        std::ofstream snapFile(snapStreamPath, std::fstream::trunc | std::fstream::out | std::fstream::binary);
-        if(!snapFile.is_open() || snapFile.fail()){
-            callback(false, "Cannot open Stream Snap File");
-            return;
-        }
-        snap_impl(callback, snapFile);
+    template<typename Callback, typename Ostream> 
+    void snapStream(Ostream& ostream, Callback&& callback){
+        snap_impl(callback, ostream);
     }
     template<typename Callback> 
     void snap(Callback&& callback, uint32_t seriesid){
