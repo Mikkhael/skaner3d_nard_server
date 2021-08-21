@@ -129,12 +129,13 @@ namespace Trans{
     namespace DownloadSnap{
         struct Request{
             static constexpr DatagramId Id = 200;
+            static constexpr DatagramId Id_CheckIfExists = 205;
             uint32_t seriesid;
         };
         struct Response{
             static constexpr DatagramId Id_Success = 201;
             static constexpr DatagramId Id_NotFound = 202;
-            // potential file transfer
+            // potential file transfer, if expected
         };
     }
 }

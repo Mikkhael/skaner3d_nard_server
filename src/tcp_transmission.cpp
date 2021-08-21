@@ -40,6 +40,7 @@ void TcpTransSession::awaitNewRequest(){
             case Trans::CustomFile::Request::Id :   me->receiveCustomFileRequestHeader(); break;
             case Trans::SnapFrame::Request::Id :    me->prepareStreamSnapFrame(); break;
             case Trans::DownloadSnap::Request::Id : me->receiveDownloadSnapRequest(); break;
+            case Trans::DownloadSnap::Request::Id_CheckIfExists : me->receiveDownloadSnapCheckRequest(); break;
             default: {
                 me->logErrorLine("Unknown request id: ", int(id));
                 me->awaitNewRequest();
@@ -319,6 +320,44 @@ void TcpTransSession::prepareStreamSnapFrame(){
 }
 
 // Download Snap
+
+void TcpTransSession::receiveDownloadSnapCheckRequest(){
+    logInfoLine("Receiving Download Snap Request Check");
+    asio::async_read(getSocket(), buffer.get(sizeof(Trans::DownloadSnap::Request)), ASYNC_CALLBACK{
+        if(err){
+            me->handleError(err, "While receiving Download Snap Request");
+            return;
+        }
+        Trans::DownloadSnap::Request header;
+        me->buffer.loadObject(header);
+        me->logInfoLine("Preparing snap file with seriesid ", header.seriesid);
+        std::ifstream snapFile(snapper.getSnapFilePathForId(header.seriesid), std::fstream::binary);
+        if(!snapFile.good()){
+            me->logInfoLine("Snap file with seriesid ", header.seriesid, " not found");
+            asio::async_write(me->getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_NotFound),
+            ASYNC_CALLBACK_NESTED{
+                if(err){
+                    me->handleError(err, "While sending NotFound response for Snap Download");
+                    return;
+                }
+                me->completeOperation();
+            });
+            return;
+        }else{
+            me->logInfoLine("Snap file with seriesid ", header.seriesid, " found");
+            asio::async_write(me->getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_Success),
+            ASYNC_CALLBACK_NESTED{
+                if(err){
+                    me->handleError(err, "While sending Success response for Snap Download");
+                    return;
+                }
+                me->completeOperation();
+            });
+            return;
+        }
+    });
+}
+
 
 void TcpTransSession::receiveDownloadSnapRequest(){
     logInfoLine("Receiving Download Snap Request");

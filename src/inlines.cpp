@@ -47,5 +47,7 @@ constexpr DatagramId Trans::CustomFile::Request::Id;
 constexpr DatagramId Trans::SnapFrame::Request::Id;
 
 constexpr DatagramId Trans::DownloadSnap::Request::Id;
+constexpr DatagramId Trans::DownloadSnap::Request::Id_CheckIfExists;
+
 constexpr DatagramId Trans::DownloadSnap::Response::Id_Success;
 constexpr DatagramId Trans::DownloadSnap::Response::Id_NotFound;

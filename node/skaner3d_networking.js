@@ -301,7 +301,7 @@ class TcpConnection{
         this.node_socket.connect(port, host);
     }
     disconnect(){
-        this.node_socket.destroy();
+        this.node_socket.end();
         this._tcpReadBuffer.clear();
     }
     
@@ -327,12 +327,16 @@ class TcpConnection{
         this._receiveFilePart(0);
     }
     
-    sendDownloadSnapRequest(seriesid){
+    sendDownloadSnapRequest(seriesid, onlyCheck = false){
         let buffer = Buffer.alloc(1+4);
-        buffer.writeUInt8(200, 0);
+        const id = onlyCheck ? 205 : 200;
+        buffer.writeUInt8(id, 0);
         buffer.writeUInt32LE(seriesid, 1);
         this.node_socket.write(buffer);
-        this._receiveDownloadSnapResponse();
+        this._receiveDownloadSnapResponse(onlyCheck);
+    }
+    sendDownloadSnapRequestCheck(seriesid){
+        return this.sendDownloadSnapRequest(seriesid, true);
     }
     
     _receiveEchoLength(){
@@ -389,19 +393,17 @@ class TcpConnection{
         });
     }
     
-    _receiveDownloadSnapResponse(){
+    _receiveDownloadSnapResponse(onlyCheck = false){
         this._tcpReadBuffer.read(1, buffer => {
             const res = buffer.readUint8(0);
             if(res == 201){
-                this.handlers.downloadSnap.response(this, true, () => {
-                    this._receiveFilePart(0);
-                });
+                const next = onlyCheck ? (() => {}) : ( () => { this._receiveFilePart(0); } );
+                this.handlers.downloadSnap.response(this, true, next);
             }else if(res == 202){
                 this.handlers.downloadSnap.response(this, false, () => {});
             }else{
                 this.handlers.downloadSnap.format_error(this);
             }
-            
         });
     }
     

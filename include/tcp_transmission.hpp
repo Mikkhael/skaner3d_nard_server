@@ -116,6 +116,8 @@ protected:
     
     // Download Snap
     
+    void receiveDownloadSnapCheckRequest();
+    
     void receiveDownloadSnapRequest();
     void prepareSnapToSend();
     

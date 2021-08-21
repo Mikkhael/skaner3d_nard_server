@@ -65,10 +65,13 @@ tcp.handlers.echo.response = (tcp, message) => {
     console.log(`Received Echo response with message: ${message}`);
 }
 
-
+let expectSnapDownload = true;
 tcp.handlers.downloadSnap.response = (tcp, found, next) => {
     if(found){
         console.log(`Found snap with seriesid ${DownloadSnapContext.seriesid}`);
+        if(!expectSnapDownload){
+            return;
+        }
         const downloadPath = `snap_${DownloadSnapContext.seriesid}.png`;
         fs.open(downloadPath, "w", (err, fd) => {
             if(err){
@@ -184,6 +187,7 @@ function printMenu(){
     console.log("tf - TCP File download | <server_filepath> <local_filepath>");
     console.log("ts - TCP Snap Frame");
     console.log("td - TCP Download Snap | <seriesid> ");
+    console.log("tdc - TCP Download Snap Check | <seriesid> ");
     console.log("stream - TCP start streaming | <delay> ");
     console.log("stopstream - TCP top streaming ");
     console.log("q  - Quit");
@@ -251,7 +255,13 @@ function handleOption(prompt, test = false){
     } else if (args[0] == "td"){
         DownloadSnapContext.seriesid = +args[1];
         console.log(`TCP Downloading snap with seriesid ${DownloadSnapContext.seriesid}`);
+        expectSnapDownload = true;
         tcp.sendDownloadSnapRequest(DownloadSnapContext.seriesid);
+    } else if (args[0] == "tdc"){
+        DownloadSnapContext.seriesid = +args[1];
+        console.log(`TCP Checking snap with seriesid ${DownloadSnapContext.seriesid}`);
+        expectSnapDownload = false;
+        tcp.sendDownloadSnapRequestCheck(DownloadSnapContext.seriesid);
     } else if (args[0] == "stream"){
         console.log(`Starting stream`);
         stopStream = false;
