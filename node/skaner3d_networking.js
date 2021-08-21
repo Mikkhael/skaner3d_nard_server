@@ -1,9 +1,15 @@
+// @ts-check
+
 //////////// UDP
 const dgram = require("dgram");
 
+/**
+ * 
+ * @param {string} string 
+ */
 function StringToIp(string){
     const base = 256;
-    let parts = string.split('.');
+    let parts = string.split('.').map(x => parseInt(x));
     let res = 0;
     let pow = 1;
     res += parts[3] * pow; pow *= base;
@@ -18,34 +24,43 @@ function StringToIp(string){
 
 class UdpSocket{
     constructor(port = 0){
+        /** @type dgram.Socket */
         this.node_socket = dgram.createSocket("udp4");
+        
         
         this.handlers = {
             socket: {
+                /** @param {Error} err  */
                 error: function(err){},
                 close: function(){},
                 listening: function(){}
             },
             other_error: {
+                /** @param {number} id  @param {dgram.RemoteInfo} rinfo */
                 unknown_id: function(id, rinfo){}
             },
             ping: {
+                /** @param {dgram.RemoteInfo} rinfo */
                 response: function(rinfo){}
             },
             echo: {
+                /** @param {string} message  @param {dgram.RemoteInfo} rinfo */
                 response: function(message, rinfo){}
             },
             config: {
                 network: {
                     set: {
+                        /** @param {boolean} status  @param {dgram.RemoteInfo} rinfo */
                         response: function(status, rinfo){}
                     }
                 },
                 device: {
                     set: {
+                        /** @param {boolean} status  @param {dgram.RemoteInfo} rinfo */
                         response: function(status, rinfo){}
                     },
                     get: {
+                        /** @param {string} value  @param {dgram.RemoteInfo} rinfo */
                         response: function(value, rinfo){}
                     }
                 }
@@ -62,7 +77,7 @@ class UdpSocket{
             this.handlers.socket.close();
         });
         this.node_socket.on("message", (buffer, rinfo) => {
-            let id = buffer.readUint8(0);
+            let id = buffer.readUInt8(0);
             switch(id){
                 case 11: {
                     this.handlers.ping.response(rinfo);
@@ -102,16 +117,28 @@ class UdpSocket{
         this.setPort(port);
     }
     
+    /** @param {string} address @param {number} port */
     sendPing(address, port){
         let buffer = new Uint8Array([10]);
         this.node_socket.send(buffer, port, address);
     }
     
+    /** @param {string} address @param {number} port @param {string} message*/
     sendEcho(address, port, message){
-        let buffer = new Uint8Array([12, ...message.split("").map(x => x.charCodeAt(x))]);
+        let buffer = new Uint8Array([12, ...message.split("").map(x => x.charCodeAt(0))]);
         this.node_socket.send(buffer, port, address);
     }
-    
+    /**
+     * 
+     * @param {string} address 
+     * @param {number} port 
+     * @param {string} ip 
+     * @param {string} mask 
+     * @param {string} gateway 
+     * @param {string} dns1 
+     * @param {string} dns2 
+     * @param {boolean} isDynamic 
+     */
     sendConfigNetworkSet(address, port, ip, mask, gateway, dns1, dns2, isDynamic){
         let buffer = Buffer.alloc(1+6*4);
         buffer.writeUInt8(100, 0);
@@ -124,6 +151,7 @@ class UdpSocket{
         this.node_socket.send(buffer, port, address);
     }
     
+    /** @param {string} address @param {number} port @param {string} config*/
     sendConfigDeviceSet(address, port, config){
         let buffer = Buffer.alloc(1+config.length);
         buffer.writeUInt8(110, 0);
@@ -131,16 +159,19 @@ class UdpSocket{
         this.node_socket.send(buffer, port, address);
     }
     
+    /** @param {string} address @param {number} port */
     sendConfigDeviceGet(address, port){
         let buffer = new Uint8Array([120]);
         this.node_socket.send(buffer, port, address);
     }
     
+    /** @param {string} address @param {number} port */
     sendReboot(address, port){
         let buffer = new Uint8Array([130]);
         this.node_socket.send(buffer, port, address);
     }
     
+    /** @param {string} address @param {number} port @param {number} seriesid*/
     sendSnap(address, port, seriesid){
         let buffer = Buffer.alloc(1+4);
         buffer.writeUInt8(200, 0);
@@ -148,11 +179,13 @@ class UdpSocket{
         this.node_socket.send(buffer, port, address);
     }
     
+    /** @param {string} address @param {number} port */
     sendDeleteAllSnaps(address, port){
         let buffer = new Uint8Array([222]);
         this.node_socket.send(buffer, port, address);
     }
     
+    /** @param {number} port*/
     setPort(port){
         this.node_socket.bind(port);
     }
@@ -167,6 +200,7 @@ class UdpSocket{
 const net = require("net");
 
 class TcpRead {
+    /** @param {net.Socket} socket */
     constructor(socket){
         this.socket = socket;
         this.socket.pause();
@@ -180,16 +214,19 @@ class TcpRead {
         this.bytesTotal = 0;
         this.isReady = true;
         
+        /** @type {Buffer} */
         this.leftover_buffer = Buffer.allocUnsafe(0);
         
+        /** @param {Buffer} buffer */
         this.callback = function(buffer){};
     }
     
+    /** @param {Buffer} some_buffer */
     read_some(some_buffer){
         if(this.isReady){
             //console.log("BUFF slow");
             this.socket.pause();
-            this.leftover_buffer = Buffer.concat(this.leftover_buffer, some_buffer);
+            this.leftover_buffer = Buffer.concat([this.leftover_buffer, some_buffer]);
             return;
         }
         const bytesLeft = this.bytesTotal - this.bytesRead;
@@ -216,6 +253,7 @@ class TcpRead {
         }
     }
     
+    /** @param {number} length @param {(Buffer)=>void} callback */
     read(length, callback) {
         //console.log("BUFF toRead ", length);
         this.isReady = false;
@@ -247,43 +285,62 @@ class TcpRead {
 
 class TcpConnection{
     constructor(){
-        this.node_socket = net.Socket();
+        /** @type {net.Socket} */
+        this.node_socket = new net.Socket();
+        
+        this.isConnected = false;
         
         this.handlers = {
             socket: {
+                
+                /** @param {TcpConnection} tcp @param {Error} err*/
                 error: function(tcp, err){},
+                /** @param {TcpConnection} tcp*/
                 close: function(tcp){},
+                /** @param {TcpConnection} tcp*/
                 connect: function(tcp){}
             },
             other_error: {
             },
             echo: {
-                response: function(tcp, message, rinfo){}
+                /** @param {TcpConnection} tcp @param {string} message*/
+                response: function(tcp, message){}
             },
             file: {
+                /** @param {TcpConnection} tcp @param {number} totalSize @param {()=>void} next*/
                 start: function(tcp, totalSize, next){},
+                /** @param {TcpConnection} tcp @param {Buffer} buffer @param {()=>void} next*/
                 part: function(tcp, buffer, next){},
+                /** @param {TcpConnection} tcp*/
                 complete: function(tcp){},
+                /** @param {TcpConnection} tcp*/
                 server_error: function(tcp){},
+                /** @param {TcpConnection} tcp*/
                 format_error: function(tcp){}
             },
             downloadSnap: {
+                /** @param {TcpConnection} tcp @param {boolean} found @param {()=>void} next */
                 response: function(tcp, found, next){},
+                /** @param {TcpConnection} tcp*/
                 format_error: function(tcp){}
             }
         };
         
+        /** @type {TcpRead} */
         this._tcpReadBuffer = new TcpRead(this.node_socket);
         
         this.node_socket.on("error", (err) => {
+            this.isConnected = false;
             this._tcpReadBuffer.clear();
             this.handlers.socket.error(this, err);
         });
         this.node_socket.on("connect", () => {
+            this.isConnected = true;
             this.node_socket.pause();
             this.handlers.socket.connect(this);
         });
         this.node_socket.on("close", () => {
+            this.isConnected = false;
             this._tcpReadBuffer.clear();
             this.handlers.socket.close(this);
         });
@@ -300,16 +357,18 @@ class TcpConnection{
         return this.node_socket.remotePort;
     }
     
-    
+    /** @param {string} host @param {number} port */
     connect(host, port){
         this._tcpReadBuffer.clear();
         this.node_socket.connect(port, host);
     }
     disconnect(){
+        this.isConnected = false;
         this.node_socket.end();
         this._tcpReadBuffer.clear();
     }
     
+    /** @param {string} message*/
     sendEcho(message){
         let buffer = Buffer.allocUnsafe(1+4+message.length);
         buffer.writeUInt8(12, 0);
@@ -318,6 +377,7 @@ class TcpConnection{
         this.node_socket.write(buffer);
         this._receiveEchoLength();
     }
+    /** @param {string} server_file*/
     sendCustomFileRequest(server_file){
         let buffer = Buffer.allocUnsafe(1+4+4+server_file.length);
         buffer.writeUInt8(130, 0);
@@ -332,6 +392,7 @@ class TcpConnection{
         this._receiveFilePart(0);
     }
     
+    /** @param {number} seriesid*/
     sendDownloadSnapRequest(seriesid, onlyCheck = false){
         let buffer = Buffer.alloc(1+4);
         const id = onlyCheck ? 205 : 200;
@@ -340,6 +401,7 @@ class TcpConnection{
         this.node_socket.write(buffer);
         this._receiveDownloadSnapResponse(onlyCheck);
     }
+    /** @param {number} seriesid*/
     sendDownloadSnapRequestCheck(seriesid){
         return this.sendDownloadSnapRequest(seriesid, true);
     }
@@ -350,6 +412,7 @@ class TcpConnection{
             this._receiveEchoMessage(length);
         });
     }
+    /** @param {number} length*/
     _receiveEchoMessage(length){
         this._tcpReadBuffer.read(length, buffer => {
             let message = buffer.toString();
@@ -357,6 +420,7 @@ class TcpConnection{
         });
     }
     
+    /** @param {number} expectedFileid*/
     _receiveFilePart(expectedFileid){
         this._tcpReadBuffer.read(1+4+4, buffer => {
             let id = buffer.readUint8(0);

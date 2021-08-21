@@ -1,3 +1,4 @@
+// @ts-check
 
 const readline = require("readline");
 const skanernet = require("./skaner3d_networking.js");
@@ -18,30 +19,35 @@ udp.handlers.socket.listening = () => {
 udp.handlers.socket.close = () => {
     console.log('UDP Socket closed');
 };
-
+/** @param {Error} err */
 udp.handlers.socket.error = (err) => {
     console.log(`UDP Socket error occured: ${err}`);
 };
+/** @param {number} id @param {import("dgram").RemoteInfo} rinfo */
 udp.handlers.other_error.unknown_id = (id, rinfo) => {
     console.log(`Unrecognized datagram ID received from ${rinfo.address}:${rinfo.port} - ${id}`);
 };
 
+/** @param {import("dgram").RemoteInfo} rinfo */
 udp.handlers.ping.response = (rinfo) => {
     console.log(`Received Pong from ${rinfo.address}:${rinfo.port}`);
 };
+/** @param {string} message @param {import("dgram").RemoteInfo} rinfo */
 udp.handlers.echo.response = (message, rinfo) => {
     console.log(`Received Echo response from ${rinfo.address}:${rinfo.port} with message: ${message}`);
 }
 
+/** @param {boolean} status  @param {import("dgram").RemoteInfo} rinfo */
 udp.handlers.config.network.set.response = (status, rinfo) => {
     console.log(`Setting new network config on device ${rinfo.address}:${rinfo.port}`+
-    ` completed ${status == 0 ? "not " : ""}successfully`);
+    ` completed ${!status ? "not " : ""}successfully`);
 }
-//udp.handlers.config.network.get.response = NOT IMPLEMENTED YET
+/** @param {boolean} status  @param {import("dgram").RemoteInfo} rinfo */
 udp.handlers.config.device.set.response = (status, rinfo) => {
     console.log(`Setting new device config on device ${rinfo.address}:${rinfo.port}`+
-    ` completed ${status == 0 ? "not " : ""}successfully`);
+    ` completed ${!status ? "not " : ""}successfully`);
 }
+/** @param {string} value  @param {import("dgram").RemoteInfo} rinfo */
 udp.handlers.config.device.get.response = (value, rinfo) => {
     console.log(`Device config of device ${rinfo.address}:${rinfo.port} is: ${value}`);
 }
@@ -50,22 +56,27 @@ udp.handlers.config.device.get.response = (value, rinfo) => {
 
 const tcp = new skanernet.TcpConnection();
 
+/** @param {skanernet.TcpConnection} tcp */
 tcp.handlers.socket.connect = (tcp) => {
     console.log(`TCP Socket connected to ${tcp.getAddress()}:${tcp.getPort()}`);
 }
+/** @param {skanernet.TcpConnection} tcp */
 tcp.handlers.socket.close = (tcp) => {
     console.log(`TCP Socket closed.`);
 }
 
+/** @param {skanernet.TcpConnection} tcp @param {Error} err*/
 tcp.handlers.socket.error = (tcp, err) => {
     console.log(`TCP Socket error occured: ${err}`);
 }
 
+/** @param {skanernet.TcpConnection} tcp @param {string} message*/
 tcp.handlers.echo.response = (tcp, message) => {
     console.log(`Received Echo response with message: ${message}`);
 }
 
 let expectSnapDownload = true;
+/** @param {skanernet.TcpConnection} tcp @param {boolean} found @param {function(void):void} next*/
 tcp.handlers.downloadSnap.response = (tcp, found, next) => {
     if(found){
         console.log(`Found snap with seriesid ${DownloadSnapContext.seriesid}`);
@@ -94,6 +105,7 @@ tcp.handlers.downloadSnap.response = (tcp, found, next) => {
         console.log(`Snap with seriesid ${DownloadSnapContext.seriesid} does not exist`);
     }
 }
+/** @param {skanernet.TcpConnection} tcp*/
 tcp.handlers.downloadSnap.format_error = (tcp) => {
     console.log(`Received incorect segment format during downloading snap. Closing session.`);
     tcp.disconnect();
@@ -109,6 +121,7 @@ const FileTransmissionContext = {
 };
 
 
+/** @param {skanernet.TcpConnection} tcp @param {number} totalFileSize @param {()=>void} next*/
 tcp.handlers.file.start = (tcp, totalFileSize, next) => {
     console.log(`Begining to download file with total size: ${totalFileSize}`);
     if(totalFileSize > 999999999999999999999){
@@ -118,10 +131,11 @@ tcp.handlers.file.start = (tcp, totalFileSize, next) => {
         next();
     }
 };
+/** @param {skanernet.TcpConnection} tcp @param {Buffer} data @param {()=>void} next*/
 tcp.handlers.file.part = (tcp, data, next) => {
     console.log(`Recived file part with size: ${data.length}`);
-    console.log(`First Bytes: ${Uint8Array.from(data.slice(0,4)).map(x => x.toString(16) + " ")}`);
-    console.log(`Last Bytes: ${Uint8Array.from(data.slice(data.length-4)).map(x => x.toString(16) + " ")}`);
+    console.log(`First Bytes: ${Uint8Array.from(data.slice(0,4))}`);
+    console.log(`Last Bytes: ${Uint8Array.from(data.slice(data.length-4))}`);
     fs.write(FileTransmissionContext.file_handle, data, (err)=>{
         if(err){
             console.log(`File system error occured: ${err}`);
@@ -130,14 +144,17 @@ tcp.handlers.file.part = (tcp, data, next) => {
         }
     });
 };
+/** @param {skanernet.TcpConnection} tcp */
 tcp.handlers.file.complete = (tcp) => {
     console.log(`Completed file receive`);
     FileTransmissionContext.callback(true);
 };
+/** @param {skanernet.TcpConnection} tcp */
 tcp.handlers.file.server_error = (tcp) => {
     console.log(`Server file-system error occured during file transmission`);
     FileTransmissionContext.callback(false);
 }
+/** @param {skanernet.TcpConnection} tcp */
 tcp.handlers.file.format_error = (tcp) => {
     console.log(`Ill-formatted packet received. Closing session.`);
     tcp.disconnect();
@@ -198,6 +215,7 @@ function getOption(){
     rl.question(">", handleOption);
 }
 
+/** @param {string} prompt */
 function handleOption(prompt, test = false){
     let args = prompt.trim().split(/\s+/);
     if(args[0] == 'q'){
@@ -215,22 +233,22 @@ function handleOption(prompt, test = false){
         udp.sendEcho( args[1], parseInt(args[2]), args[3] );
     } else if (args[0] == "dcns") {
         console.log("Setting new network config");
-        udp.sendConfigNetworkSet(args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]=='y');
+        udp.sendConfigNetworkSet(args[1], +args[2], args[3], args[4], args[5], args[6], args[7], args[8]=='y');
     } else if (args[0] == "dcds") {
         console.log("Setting new device config");
-        udp.sendConfigDeviceSet(args[1], args[2], args[3]);
+        udp.sendConfigDeviceSet(args[1], +args[2], args[3]);
     } else if (args[0] == "dcdg") {
         console.log("Getting device config");
-        udp.sendConfigDeviceGet(args[1], args[2]);
+        udp.sendConfigDeviceGet(args[1], +args[2]);
     } else if (args[0] == "dr") {
         console.log("Rebooting device");
-        udp.sendReboot(args[1], args[2]);
+        udp.sendReboot(args[1], +args[2]);
     } else if (args[0] == "ds") {
         console.log(`Sending SNAP Request with seriesid=${+args[3]}`);
-        udp.sendSnap(args[1], args[2], +args[3]);
+        udp.sendSnap(args[1], +args[2], +args[3]);
     } else if (args[0] == "dsad") {
         console.log(`Sending Delete All Snaps Request`);
-        udp.sendDeleteAllSnaps(args[1], args[2]);
+        udp.sendDeleteAllSnaps(args[1], +args[2]);
     } else if (args[0] == "tc"){
         console.log(`Connecting to TCP Server to ${args[1]}:${args[2]}`);
         tcp.connect( args[1], parseInt(args[2]) );
