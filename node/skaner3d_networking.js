@@ -148,6 +148,11 @@ class UdpSocket{
         this.node_socket.send(buffer, port, address);
     }
     
+    sendDeleteAllSnaps(address, port){
+        let buffer = new Uint8Array([222]);
+        this.node_socket.send(buffer, port, address);
+    }
+    
     setPort(port){
         this.node_socket.bind(port);
     }

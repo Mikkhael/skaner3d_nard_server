@@ -189,5 +189,10 @@ void UdpDiagHandler::handleUdpSnap(){
     }, header.seriesid);
 }
 
+void UdpDiagHandler::handleUdpDeleteAllSnaps(){
+    logInfoLine("Deleting all snaps.");
+    snapper.deleteAllSnaps();
+}
+
 
 UdpDiagService udpDiagService;

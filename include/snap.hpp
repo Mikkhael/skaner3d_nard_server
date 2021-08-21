@@ -3,10 +3,11 @@
 #include <mutex>
 #include <fstream>
 #include <sstream>
+#include <cstdlib>
 class Snapper{
     
     //std::mutex mutex;
-    std::string snapPrefix;
+    std::string snapDirectory;
     
     #ifdef FAKECAMERA
     
@@ -62,11 +63,11 @@ public:
     
     #endif // FAKECAMERA
     
-    void setConfig(const std::string& snapPrefix){
-        this->snapPrefix = snapPrefix;
+    void setConfig(const std::string& snapDirectory){
+        this->snapDirectory = snapDirectory;
     }
     std::string getSnapFilePathForId(uint32_t seriesid){
-        return snapPrefix + std::to_string(seriesid);
+        return snapDirectory + "/snap_" + std::to_string(seriesid);
     }
     
     template<typename Callback, typename Ostream> 
@@ -84,6 +85,28 @@ public:
         snap_impl(callback, snapFile);
     }
     
+    
+    
+    void deleteAllSnaps(){
+        #ifdef WINDOWS
+            std::string fixedDirectory = snapDirectory;
+            for(auto& c : fixedDirectory){
+                if(c == '/'){
+                    c = '\\';
+                }
+            }
+            std::string command = "rmdir /S /Q ";
+            command += fixedDirectory;
+            command += " & mkdir ";
+            command += fixedDirectory;
+        #else
+            std::string command = "rm -r ";
+            command += snapDirectory;
+            command += "/*";
+        #endif // WINDOWS
+        //std::cout << "C: " << command << std::endl;
+        std::system(command.c_str());
+    }
 };
 
 extern Snapper snapper;

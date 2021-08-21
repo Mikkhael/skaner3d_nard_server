@@ -181,6 +181,7 @@ function printMenu(){
     console.log("dcdg - Udp Config Device Get | <address> <port>");
     console.log("dr - Udp Reboot | <address> <port>");
     console.log("ds - Udp SNAP | <address> <port> <seriesid>");
+    console.log("dsad - Udp Dlete All Snaps | <address> <port>");
     console.log("tc - TCP Connect to server | <address> <port>");
     console.log("tx - TCP Disconnect");
     console.log("te - TCP Echo | <message>");
@@ -227,6 +228,9 @@ function handleOption(prompt, test = false){
     } else if (args[0] == "ds") {
         console.log(`Sending SNAP Request with seriesid=${+args[3]}`);
         udp.sendSnap(args[1], args[2], +args[3]);
+    } else if (args[0] == "dsad") {
+        console.log(`Sending Delete All Snaps Request`);
+        udp.sendDeleteAllSnaps(args[1], args[2]);
     } else if (args[0] == "tc"){
         console.log(`Connecting to TCP Server to ${args[1]}:${args[2]}`);
         tcp.connect( args[1], parseInt(args[2]) );

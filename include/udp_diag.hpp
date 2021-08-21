@@ -35,6 +35,8 @@ protected:
     void handleUdpReboot();
     
     void handleUdpSnap();
+    
+    void handleUdpDeleteAllSnaps();
         
 public:
     
@@ -73,6 +75,8 @@ public:
             case Diag::Reboot::Id: handleUdpReboot(); break;
             
             case Diag::Snap::Id: handleUdpSnap(); break;
+            
+            case Diag::DeleteAllSnaps::Id: handleUdpDeleteAllSnaps(); break;
             
             default:{
                 logErrorLine("Unknown id");

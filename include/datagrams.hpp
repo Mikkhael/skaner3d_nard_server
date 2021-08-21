@@ -84,6 +84,10 @@ namespace Diag{
         static constexpr DatagramId Id = 200;
         uint32_t seriesid;
     };
+    
+    struct DeleteAllSnaps{
+        static constexpr DatagramId Id = 222;
+    };
 }
 
 namespace Trans{
