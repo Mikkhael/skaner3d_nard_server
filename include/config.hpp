@@ -104,32 +104,40 @@ public:
                 errors += '\n';
                 return false;
             }
+            return true;
         }
-        return true;
+        errors += "Missing config option: ";
+        errors += name;
+        errors += '\n';
+        return false;
     }
     bool loadOptionAsString(const std::string& name, std::string& errors, std::string& res){
         const auto temp = getOption(name);
         if(temp){
             res = *temp;
+            return true;
         }
-        return true;
+        errors += "Missing config option: ";
+        errors += name;
+        errors += '\n';
+        return false;
     }
     
     bool parseOptions(){
         bool good = true;
-        good = good && loadOptionAsString("infoLogFilePath", optionsParsingError, options.infoLogFilePath);
-        good = good && loadOptionAsString("errorLogFilePath", optionsParsingError, options.errorLogFilePath);
-        good = good && loadOptionAsInt("threads", optionsParsingError, options.threads);
-        good = good && loadOptionAsInt("udpDiagPort", optionsParsingError, options.udpDiagPort);
-        good = good && loadOptionAsInt("tcpTransPort", optionsParsingError, options.tcpTransPort);
-        good = good && loadOptionAsString("snapStreamPath", optionsParsingError, options.snapStreamPath);
-        good = good && loadOptionAsString("snapDirectory", optionsParsingError, options.snapDirectory);
-        good = good && loadOptionAsString("framesPath", optionsParsingError, options.fake_framesPath);
-        good = good && loadOptionAsInt("framesCount", optionsParsingError, options.fake_framesCount);
-        good = good && loadOptionAsInt("frameDuration", optionsParsingError, options.fake_frameDuration);
-        good = good && loadOptionAsString("ipSettingsPath", optionsParsingError, options.ipSettingsPath);
-        good = good && loadOptionAsString("ipBootSettingsPath", optionsParsingError, options.ipBootSettingsPath);
-        good = good && loadOptionAsString("customSettingsPath", optionsParsingError, options.customSettingsPath);
+        good &= loadOptionAsString("infoLogFilePath", optionsParsingError, options.infoLogFilePath);
+        good &= loadOptionAsString("errorLogFilePath", optionsParsingError, options.errorLogFilePath);
+        good &= loadOptionAsInt("threads", optionsParsingError, options.threads);
+        good &= loadOptionAsInt("udpDiagPort", optionsParsingError, options.udpDiagPort);
+        good &= loadOptionAsInt("tcpTransPort", optionsParsingError, options.tcpTransPort);
+        good &= loadOptionAsString("snapStreamPath", optionsParsingError, options.snapStreamPath);
+        good &= loadOptionAsString("snapDirectory", optionsParsingError, options.snapDirectory);
+        good &= loadOptionAsString("framesPath", optionsParsingError, options.fake_framesPath);
+        good &= loadOptionAsInt("framesCount", optionsParsingError, options.fake_framesCount);
+        good &= loadOptionAsInt("frameDuration", optionsParsingError, options.fake_frameDuration);
+        good &= loadOptionAsString("ipSettingsPath", optionsParsingError, options.ipSettingsPath);
+        good &= loadOptionAsString("ipBootSettingsPath", optionsParsingError, options.ipBootSettingsPath);
+        good &= loadOptionAsString("customSettingsPath", optionsParsingError, options.customSettingsPath);
         return good;
     }
     

@@ -36,7 +36,7 @@ try{
     }
     
     if(!config.parseOptions()){
-        std::cerr << "Error whiel parsing config options: \n" << config.optionsParsingError << '\n';
+        std::cout << "Error whiel parsing config options: \n" << config.optionsParsingError << std::endl;
         return -1;
     }
     
