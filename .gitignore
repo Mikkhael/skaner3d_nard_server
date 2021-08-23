@@ -1,8 +1,13 @@
-
+#Nard excludes
 nard/build/
 nard/data/
 .vscode
+
+#Node excludes
 node/*.png
+node/server/node_modules/
+node/server/snaps/
+
 
 #Ignore thumbnails created by Windows
 Thumbs.db

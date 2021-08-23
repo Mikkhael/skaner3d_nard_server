@@ -1,7 +1,7 @@
 // @ts-check
 
 const readline = require("readline");
-const skanernet = require("./skaner3d_networking.js");
+const skanernet = require("../skaner3d_networking.js");
 const fs = require("fs");
 
 const rl = readline.createInterface({

@@ -1,0 +1,184 @@
+const http = require('http');
+const path = require('path');
+const express = require('express');
+const websocket = require('ws');
+const app = express();
+const httpServer = http.createServer(app);
+
+const readline = require("readline");
+const skanernet = require("./skaner3d_networking.js");
+const fs = require("fs");
+
+let cameraList = [];
+let cameras = [];
+
+let file = {buffer: undefined, index: 0, callback: undefined};
+let socketList = undefined;
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+const udp = new skanernet.UdpSocket();
+
+app.use(express.static(__dirname + '/website'));
+httpServer.listen(80, function() {
+    console.log("Server listening at port 80!");
+});
+
+udp.handlers.ping.response = (rinfo) => {
+    console.log(`Received Pong from ${rinfo.address}:${rinfo.port}`);
+    if ( !(rinfo.address+":"+rinfo.port in cameraList) ) {
+        console.log("Adding new camera: "+rinfo.address+":"+rinfo.port);
+        let cam = {
+            address: rinfo.address,
+            port: rinfo.port,
+            id: cameras.length
+        };
+        cameraList[rinfo.address+":"+rinfo.port] = cam;
+        cameras.push(cam);
+    }
+}; 
+udp.sendPing( "192.168.100.255", 8888 );
+udp.sendPing( "192.168.100.255", 8889 );
+setTimeout(()=>{console.log("Got response form "+Object.keys(cameras).length+" camera(s)")},2000);
+
+// tcp
+
+const tcp = new skanernet.TcpConnection();
+
+// hmm
+
+tcp.handlers.socket.close = () => {
+    console.log(`TCP Socket closed.`);
+}
+
+tcp.handlers.socket.error = (err) => {
+    console.log(`TCP Socket error occured: ${err}`);
+}
+
+tcp.handlers.echo.response = (message) => {
+    console.log(`Received Echo response with message: ${message}`);
+}
+
+
+tcp.handlers.file.server_error = () => {
+    console.log(`Server file-system error occured during file transmission`);
+    FileTransmissionContext.callback(false);
+}
+tcp.handlers.file.format_error = () => {
+    console.log(`Ill-formatted packet received. Closing session.`);
+    tcp.disconnect();
+    console.log('Reconnecting to : '+tcp.current.address+":"+tcp.current.port);
+    startStream(tcp.current.address, tcp.current.port);
+}
+
+tcp.handlers.socket.connect = () => {
+    console.log(`TCP Socket connected to ${tcp.getAddress()}:${tcp.getPort()}`);
+}
+
+const FileTransmissionContext = {
+    file_handle: null,
+    callback: (success) => {}
+};
+
+
+tcp.handlers.file.start = (totalFileSize, next) => {
+    //console.log(`Begining to download file with total size: ${totalFileSize}`);
+    if(totalFileSize > 999999999999999999999){
+        console.log(`File size is to big. Closing session.`);
+        tcp.disconnect();
+    }else{
+        delete(fileBuffer);
+        //file.buffer = new Uint8Array(totalFileSize);
+        file.buffer = Buffer.alloc(totalFileSize);
+        file.index = 0;
+        next();
+    }
+};
+tcp.handlers.file.part = (data, next) => {
+    //console.log(`Recived file part with size: ${data.length}`);
+    //console.log(`First Bytes: ${Uint8Array.from(data.slice(0,4)).map(x => x.toString(16) + " ")}`);
+    //console.log(`Last Bytes: ${Uint8Array.from(data.slice(data.length-4)).map(x => x.toString(16) + " ")}`);
+
+    data.copy(file.buffer, file.index);
+    file.index += data.length;
+    next();
+};
+tcp.handlers.file.complete = () => {
+    //console.log(`Completed file receive`);
+    file.callback(true);
+};
+
+const framePartFilePath = "./newFrame.part.png";
+const frameFilePath = "./website/frame.png";
+let stopStream = false;
+
+function snapFrame(callback){
+    file.callback = (success) => {
+        if(!success){
+            //console.log("Failed to download frame");
+            callback(false);
+        }else{
+            //console.log("Downloaded frame");
+            //let str = "";
+            //file.buffer.forEach((x)=>{ str+=String.fromCharCode(x) });
+            if (socketList.readyState === 1)
+                socketList.send(JSON.stringify({msg: "frame", buffer: file.buffer.toString("binary")}));
+            callback(true);
+        }
+    };
+    tcp.sendSnapFrameRequest();
+}
+
+function startStream(_address, _port) {
+    tcp.disconnect();
+    tcp.current = {address: _address, port: _port};
+    tcp.connect( _address, _port );
+            
+    console.log(`Starting stream`);
+    stopStream = false;
+    let callback = (success) =>{
+        const delay = 1000/1000;
+        if(stopStream) return;
+        if(success){
+            setTimeout(()=>{snapFrame(callback)}, delay);
+        }
+    }
+    setTimeout(()=>{snapFrame(callback)},100);
+}
+
+// WebSocket
+const wss = new websocket.Server({
+    server: httpServer
+});
+wss.on('connection', function(socket) {
+    console.log('Got a connection!');
+    socketList = socket;
+    
+    socket.on('message', function(data) {
+        let res = JSON.parse(data);
+        if (res.msg === "getCameras"){
+            cameraList = [];
+            cameras = [];
+
+            udp.sendPing( "192.168.100.255", 8888 );
+            udp.sendPing( "192.168.100.255", 8889 );
+            setTimeout(()=>{socket.send(JSON.stringify( 
+                {
+                    msg: "cameras",
+                    cameras: cameras
+                } 
+            ))},100);
+        } else if(res.msg === "startStream"){
+            startStream(res.address, res.port);
+        } else if (res.msg === "stopStream") {
+            stopStream = true;
+            tcp.disconnect();
+        }
+    });
+    socket.on('close', function(reasonCode, description) {
+        console.log("Lost connection!");
+    });
+});
