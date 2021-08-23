@@ -1,4 +1,5 @@
 const skanernet = require("../skaner3d_networking.js");
+const cfg = require("./config.js");
 
 /////////////////////////////////////
 // Flop Class
@@ -180,7 +181,7 @@ class CameraCenter {
 
         this.maxDownloads = 1;
 
-        this.address = "192.168.0.255";
+        this.address = cfg.ip;
         this.ports = [8888, 8889];
 
         this.udp = new skanernet.UdpSocket();
