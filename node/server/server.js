@@ -11,7 +11,7 @@ const rl = readline.createInterface({
 const startNumber = Date.now();
 let fileCount = 0;
 
-setInterval(cameraCenter.requestStreamFrame.bind(cameraCenter), 1000/20);
+setInterval(cameraCenter.requestStreamFrame.bind(cameraCenter), 1000/24);
 
 messageCenter.register("getCameras", (_socket, _obj) => {
     console.log(`Socket[${messageCenter.sockets.indexOf(_socket)}] requested list of cameras.`);

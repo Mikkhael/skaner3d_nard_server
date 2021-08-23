@@ -441,7 +441,7 @@ class TcpConnection{
             }
             
             if(expectedFileid != fileid){
-                //console.log(`E: ${expectedFileid}, ${fileid}, (${id})`);
+                console.log(`E: ${expectedFileid}, ${fileid}, (${id})`);
                 this.handlers.file.format_error(this);
                 return;
             }
@@ -455,7 +455,7 @@ class TcpConnection{
                 this.handlers.file.complete(this);
                 return;
             }else{
-                //console.log(`E2: ${id}`);
+                console.log(`E2: ${id}`);
                 this.handlers.file.format_error(this);
                 return;
             }
