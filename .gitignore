@@ -1,6 +1,6 @@
 
-build/
-data/
+nard/build/
+nard/data/
 .vscode
 node/*.png
 
