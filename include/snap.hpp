@@ -39,6 +39,7 @@ class Snapper{
         
         if(!destStream || !frameFile){
             callback(false, "Unsucessful copy");
+            return;
         }
         destStream.flush();
         
