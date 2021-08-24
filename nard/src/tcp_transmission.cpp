@@ -9,6 +9,7 @@
 
 void TcpTransSession::awaitNewRequest(){
     if(operationCompletion.setBusy()){
+        logErrorLine("Preparing to receive new request without completing hendling previous!");
         return;
     }
     logInfoLine("Awaiting new request.");
@@ -288,9 +289,9 @@ void TcpTransSession::prepareCustomFileToSend(){
 void TcpTransSession::prepareStreamSnapFrame(){
     
     auto stream = std::make_shared<std::stringstream>();
-    snapper.snapStream(*stream, [stream, me = shared_from_this()](bool success, const char* error_message){
+    snapper.snapStream(*stream, [stream, me = shared_from_this()](bool success, std::string error_message){
         if(!success){
-            me->logErrorLine("File system error while snapping: ", error_message);
+            me->logErrorLine("Error while snapping: ", error_message);
             me->operationCompletion.setResult(CustomError::File);
             Trans::FilePart header;
             header.fileId = 0;

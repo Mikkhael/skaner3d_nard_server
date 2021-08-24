@@ -31,17 +31,19 @@ class Snapper{
         std::ifstream frameFile(framePath, std::fstream::in | std::fstream::binary);
         //std::cout << "Frame path: " << framePath << std::endl;
         if(!frameFile.is_open() || frameFile.fail()){
-            callback(false, "Cannot open Frame File");
+            callback(false, std::string("Cannot open Frame File with path: ") + framePath);
             return;
         }
         
         destStream << frameFile.rdbuf();
         
         if(!destStream || !frameFile){
-            callback(false, "Unsucessful copy");
+            callback(false, std::string("Unsucessful copy of Frame File: ") + framePath);
+            frameFile.close();
             return;
         }
         destStream.flush();
+        frameFile.close();
         
         callback(true, "");
         
@@ -102,6 +104,9 @@ public:
             command += fixedDirectory;
         #else
             std::string command = "rm -r ";
+            if(snapDirectory.size() <= 5){
+                throw 12345;
+            }
             command += snapDirectory;
             command += "/*";
         #endif // WINDOWS
