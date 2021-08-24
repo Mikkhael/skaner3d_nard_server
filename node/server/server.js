@@ -1,5 +1,9 @@
-const messageCenter = require("./comm.js");
-const cameraCenter = require("./cam.js");
+// @ts-check
+
+const {messageCenter} = require("./comm.js");
+const {CameraCenter} = require("./cam.js");
+
+const cameraCenter = new CameraCenter();
 
 const fs = require("fs");
 const readline = require("readline");

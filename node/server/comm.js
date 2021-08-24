@@ -1,3 +1,5 @@
+// @ts-check
+
 const http = require('http');
 const express = require('express');
 const app = express();
@@ -10,12 +12,15 @@ const websocket = require('ws');
 const wss = new websocket.Server({
     server: httpServer
 });
-wss.on('connection', function(_socket) {
+
+/** @typedef {websocket & {details: {}}} AugmentedWebsocket */
+
+wss.on('connection',  function(/** @type {AugmentedWebsocket}*/ _socket) {
     console.log(`Socket[${messageCenter.sockets.push(_socket)-1}] connected.`);
     _socket.details = {};
     
     _socket.on('message', (_data) => {
-        messageCenter.incoming( _socket, JSON.parse(_data) );
+        messageCenter.incoming( _socket, JSON.parse(_data.toString()) );
     });
     _socket.on('close', (_reasonCode, _description) => {
         console.log(`Socket[${messageCenter.sockets.indexOf(_socket)}] disconnected.`)
@@ -34,37 +39,51 @@ httpServer.listen(80, function() {
 /////////////////////////////////////
 // Message Center
 
-messageCenter = {
-    handlers: {},
-    sockets: []
+class MessageCenter{
+    constructor(){
+        /** @type {Object.<string, function(websocket, any): void>} */
+        this.handlers = {};
+        /** @type {websocket[]} */
+        this.sockets = [];
+    }
+    
+    /** @param {websocket} _socket */
+    incoming(_socket, _obj) {
+        this.last = _obj;
+        if (_obj == undefined) {
+            console.info("Got non-JSON message");
+        } else if (_obj.msg == undefined) {
+            console.info("Got unknown object");
+        } else if (this.handlers[_obj.msg] == undefined) {
+            console.groupCollapsed("Got unhandled object");
+            console.dir(_obj);
+            console.groupEnd();
+        }else {
+            this.handlers[_obj.msg](_socket, _obj);
+        }
+    }
+    
+    /** @param {string} msg @param {function(websocket, any): void} callback*/
+    register(msg, callback) {
+        this.handlers[msg] = callback;
+    }
+
+    /** @param {string} msg*/
+    unregister(msg) {
+        delete( this.handlers[msg] );
+    }
+
+    /** @param {websocket} socket @param {string} obj */
+    send(socket, obj) {
+        socket.send( JSON.stringify(obj) );
+    }
+
 };
 
-messageCenter.incoming = function(_socket, _obj) {
-    this.last = _obj;
-    if (_obj == undefined) {
-        console.info("Got non-JSON message");
-    } else if (_obj.msg == undefined) {
-        console.info("Got unknown object");
-    } else if (this.handlers[_obj.msg] == undefined) {
-        console.groupCollapsed("Got unhandled object");
-        console.dir(_obj);
-        console.groupEnd();
-    }else {
-        this.handlers[_obj.msg](_socket, _obj);
-    }
-}
+const messageCenter = new MessageCenter();
 
-messageCenter.register = function(msg, callback) {
-    this.handlers[msg] = callback;
-}
-
-messageCenter.unregister = function(msg) {
-    delete( this.handlers[msg] );
-}
-
-messageCenter.send = function(socket, obj) {
-    socket.send( JSON.stringify(obj) );
-}
 
 /////////////////////////////////////
-module.exports = messageCenter;
+module.exports = {
+    messageCenter // Nie mogę wyeksportować jako klasy, bo używasz obkiektu "messageCenter" w tym pliku na początku
+};
