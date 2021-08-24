@@ -4,6 +4,9 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <boost/filesystem.hpp>
+
+namespace fs = boost::filesystem;
 class Snapper{
     
     //std::mutex mutex;
@@ -68,6 +71,7 @@ public:
     
     void setConfig(const std::string& snapDirectory){
         this->snapDirectory = snapDirectory;
+        fs::create_directories(snapDirectory);
     }
     std::string getSnapFilePathForId(uint32_t seriesid){
         return snapDirectory + "/snap_" + std::to_string(seriesid);
@@ -90,29 +94,22 @@ public:
     
     
     
-    void deleteAllSnaps(){
-        #ifdef WINDOWS
-            std::string fixedDirectory = snapDirectory;
-            for(auto& c : fixedDirectory){
-                if(c == '/'){
-                    c = '\\';
-                }
-            }
-            std::string command = "rmdir /S /Q ";
-            command += fixedDirectory;
-            command += " & mkdir ";
-            command += fixedDirectory;
-        #else
-            std::string command = "rm -r ";
-            if(snapDirectory.size() <= 5){
-                throw 12345;
-            }
-            command += snapDirectory;
-            command += "/*";
-        #endif // WINDOWS
-        //std::cout << "C: " << command << std::endl;
-        std::system(command.c_str());
+    template<typename Callback>
+    void deleteAllSnaps(Callback callback){
+        Error err;
+        fs::remove_all(snapDirectory, err);
+        if(err){
+            callback(false, err);
+            return;
+        }
+        fs::create_directories(snapDirectory, err);
+        if(err){
+            callback(false, err);
+            return;
+        }
+        callback(true, "");
     }
+    
 };
 
 extern Snapper snapper;

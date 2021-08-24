@@ -32,7 +32,7 @@ DEFINES  = BOOST_ERROR_CODE_HEADER_ONLY FAKECAMERA
 
 # Additional flags for compilation and linking
 CXXFLAGS = -std=c++14 -Wall -Wpedantic
-LDFLAGS  = 
+LDFLAGS  = -lboost_filesystem
 
 ifeq ($(OS), Windows_NT)
 	LDFLAGS  += -lws2_32 -lwsock32

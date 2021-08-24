@@ -191,7 +191,13 @@ void UdpDiagHandler::handleUdpSnap(){
 
 void UdpDiagHandler::handleUdpDeleteAllSnaps(){
     logInfoLine("Deleting all snaps.");
-    snapper.deleteAllSnaps();
+    snapper.deleteAllSnaps([me = shared_from_this()](bool success, auto err){
+        if(!success){
+            me->logErrorLine("Error during deleting all snaps: ", err);
+            return;
+        }
+        me->logInfoLine("Successfully deleted all snaps");
+    });
 }
 
 
