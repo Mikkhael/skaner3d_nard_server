@@ -145,19 +145,18 @@ void TcpTransSession::startSendFile(){
     tempBuffer.fileId = header.fileId = getRandomId();
     header.partSize = totalSize;
     
+    
     logInfoLine("Starting Send File with id ", header.fileId, " and total size ", totalSize);
-    asio::async_write(getSocket(), const_buffers_array(
+    Error err;
+    asio::write(getSocket(), const_buffers_array(
             to_buffer_const(Trans::FilePart::Id_Start),
             to_buffer_const(header)
-        ),
-        ASYNC_CALLBACK{
-            if(err){
-                me->handleError(err, "While starting Send File.");
-                return;
-            }
-            me->sendFilePart();
-        }
-    );
+        ), err);
+    if(err){
+        handleError(err, "While starting Send File.");
+        return;
+    }
+    sendFilePart();
 }
 void TcpTransSession::sendFilePart(){
     auto& tempBuffer = tempBufferCollection.get<TempBufferCollection::File>();
@@ -178,45 +177,42 @@ void TcpTransSession::sendFilePart(){
     header.fileId = tempBuffer.fileId;
     header.partSize = bytesToSend;
     logInfoLine("Sending File Part with id ", header.fileId, " and size ", header.partSize);
-    asio::async_write(getSocket(), const_buffers_array(
+    Error err;
+    asio::write(getSocket(), const_buffers_array(
             to_buffer_const(Trans::FilePart::Id_Part),
             to_buffer_const(header),
             buffer.get(bytesToSend)
-        ),
-        ASYNC_CALLBACK_CAPTURE(canBeCompleted){
-            if(err){
-                me->handleError(err, "While sending File Part.");
-                return;
-            }
-            if(canBeCompleted){
-                me->completeSendFile(true);
-            }else{
-                me->sendFilePart();
-            }
-        }
-    );
+        ), err );
+    if(err){
+        handleError(err, "While sending File Part.");
+        return;
+    }
+    if(canBeCompleted){
+        completeSendFile(true);
+    }else{
+        sendFilePart();
+    }
 }
+
 void TcpTransSession::completeSendFile(bool successful){
     logInfoLine("Completing File Send with status: ", successful);
     auto& tempBuffer = tempBufferCollection.get<TempBufferCollection::File>();
     Trans::FilePart header;
     header.fileId = tempBuffer.fileId;
     header.partSize = 0;
-    asio::async_write(getSocket(), const_buffers_array(
+    Error err;
+    asio::write(getSocket(), const_buffers_array(
             to_buffer_const(successful ? 
                                 Trans::FilePart::Id_Success :
                                 Trans::FilePart::Id_Fail
                             ),
             to_buffer_const(header)
-        ),
-        ASYNC_CALLBACK_CAPTURE(&tempBuffer, successful){
-            if(err){
-                me->handleError(err, "While completing File Send");
-                return;
-            }
-            tempBuffer.callback(successful);
-        }
-    );
+        ), err );
+    if(err){
+        handleError(err, "While completing File Send");
+        return;
+    }
+    tempBuffer.callback(successful);
 }
     
 // File Custom
@@ -296,18 +292,16 @@ void TcpTransSession::prepareStreamSnapFrame(){
             Trans::FilePart header;
             header.fileId = 0;
             header.partSize = 0;
-            asio::async_write(me->getSocket(), const_buffers_array(
+            Error err;
+            asio::write(me->getSocket(), const_buffers_array(
                     to_buffer_const(Trans::FilePart::Id_Fail),
                     to_buffer_const(header)
-                ),
-                ASYNC_CALLBACK_NESTED{
-                    if(err){
-                        me->handleError(err, "While completing failed Snap Frame");
-                        return;
-                    }
-                    me->completeOperation();
-                }
-            );
+                ), err);
+            if(err){
+                me->handleError(err, "While completing failed Snap Frame");
+                return;
+            }
+            me->completeOperation();
             return;
         }
         auto& tempBuffer = me->tempBufferCollection.set<TempBufferCollection::File>();
@@ -335,25 +329,23 @@ void TcpTransSession::receiveDownloadSnapCheckRequest(){
         std::ifstream snapFile(snapper.getSnapFilePathForId(header.seriesid), std::fstream::binary);
         if(!snapFile.good()){
             me->logInfoLine("Snap file with seriesid ", header.seriesid, " not found");
-            asio::async_write(me->getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_NotFound),
-            ASYNC_CALLBACK_NESTED{
-                if(err){
-                    me->handleError(err, "While sending NotFound response for Snap Download");
-                    return;
-                }
-                me->completeOperation();
-            });
+            Error err;
+            asio::write(me->getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_NotFound), err);
+            if(err){
+                me->handleError(err, "While sending NotFound response for Snap Download");
+                return;
+            }
+            me->completeOperation();
             return;
         }else{
             me->logInfoLine("Snap file with seriesid ", header.seriesid, " found");
-            asio::async_write(me->getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_Success),
-            ASYNC_CALLBACK_NESTED{
-                if(err){
-                    me->handleError(err, "While sending Success response for Snap Download");
-                    return;
-                }
-                me->completeOperation();
-            });
+            Error err;
+            asio::write(me->getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_Success), err);
+            if(err){
+                me->handleError(err, "While sending Success response for Snap Download");
+                return;
+            }
+            me->completeOperation();
             return;
         }
     });
@@ -378,36 +370,34 @@ void TcpTransSession::prepareSnapToSend(){
     std::ifstream snapFile(snapper.getSnapFilePathForId(header.seriesid), std::fstream::binary);
     if(!snapFile.good()){
         logInfoLine("Snap file with seriesid ", header.seriesid, " not found");
-        asio::async_write(getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_NotFound),
-        ASYNC_CALLBACK{
-            if(err){
-                me->handleError(err, "While sending NotFound response for Snap Download");
-                return;
-            }
-            me->completeOperation();
-        });
+        Error err;
+        asio::write(getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_NotFound), err);
+        if(err){
+            handleError(err, "While sending NotFound response for Snap Download");
+            return;
+        }
+        completeOperation();
         return;
     }
     snapFile.close();
-    asio::async_write(getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_Success),
-    ASYNC_CALLBACK_CAPTURE(header){
-        if(err){
-            me->handleError(err, "While sending Success response for Snap Download");
-            return;
-        }
-        auto& tempBuffer = me->tempBufferCollection.set<TempBufferCollection::File>();
-        tempBuffer.callback = [me](bool){me->completeOperation();};
-        auto istream = openFileForSend(snapper.getSnapFilePathForId(header.seriesid), tempBuffer.end);
-        if(!istream){
-            me->logErrorLine("Unable to open specified file to send");
-            me->operationCompletion.setResult(CustomError::FileOpen);
-            tempBuffer.fileId = 0;
-            me->completeSendFile(false);
-            return;
-        }
-        tempBuffer.istream = istream;
-        me->startSendFile();
-    });
+    Error err;
+    asio::write(getSocket(), to_buffer_const(Trans::DownloadSnap::Response::Id_Success), err);
+    if(err){
+        handleError(err, "While sending Success response for Snap Download");
+        return;
+    }
+    auto& tempBuffer = tempBufferCollection.set<TempBufferCollection::File>();
+    tempBuffer.callback = [me = shared_from_this()](bool){me->completeOperation();};
+    auto istream = openFileForSend(snapper.getSnapFilePathForId(header.seriesid), tempBuffer.end);
+    if(!istream){
+        logErrorLine("Unable to open specified file to send");
+        operationCompletion.setResult(CustomError::FileOpen);
+        tempBuffer.fileId = 0;
+        completeSendFile(false);
+        return;
+    }
+    tempBuffer.istream = istream;
+    startSendFile();
 }
 
 
