@@ -4,6 +4,7 @@ const {messageCenter} = require("./comm.js");
 const {CameraCenter} = require("./cam.js");
 
 const cameraCenter = new CameraCenter();
+global.cameraCenter = cameraCenter;
 
 const fs = require("fs");
 const readline = require("readline");
