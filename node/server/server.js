@@ -33,5 +33,5 @@ messageCenter.register("stopStream", (_socket, _obj) => {
 });
 messageCenter.register("shoot", (_socket, _obj) => {
     console.log(`Socket[${messageCenter.sockets.indexOf(_socket)}] requested image shot.`);
-    cameraCenter.shoot( startNumber+fileCount++ & 0xFFFFFFFF);
+    cameraCenter.shoot( startNumber+fileCount++ & 0x7FFFFFFF);
 });
