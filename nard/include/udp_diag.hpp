@@ -37,6 +37,8 @@ protected:
     void handleUdpSnap();
     
     void handleUdpDeleteAllSnaps();
+    
+    void handleUdpListSnaps();
         
 public:
     
@@ -77,6 +79,8 @@ public:
             case Diag::Snap::Id: handleUdpSnap(); break;
             
             case Diag::DeleteAllSnaps::Id: handleUdpDeleteAllSnaps(); break;
+            
+            case Diag::ListSnaps::Request::Id: handleUdpListSnaps(); break;
             
             default:{
                 logErrorLine("Unknown id");

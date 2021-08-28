@@ -156,18 +156,19 @@ void UdpDiagHandler::handleUdpConfigDevicekGet(){
     logInfoLine("Received Config Device Get Request");
     std::string value = systemManager.getDeviceConfig();
     logInfoLine("Responding woth Config Device value: ", value);
-    udpDiagService.socket().async_send_to_safe(
+    Error err;
+    udpDiagService.socket().send_to_safe(
         const_buffers_array(
             to_buffer_const( Diag::Config::Device::Get::Response::Id ),
             asio::buffer(value)
         ),
         remoteEndpoint,
-        ASYNC_CALLBACK{
-            if(err){
-                me->defaultErrorHandler(err);
-            }
-        }
+        0,
+        err
     );
+    if(err){
+        defaultErrorHandler(err);
+    }
 }
 
 void UdpDiagHandler::handleUdpReboot(){
@@ -197,6 +198,31 @@ void UdpDiagHandler::handleUdpDeleteAllSnaps(){
             return;
         }
         me->logInfoLine("Successfully deleted all snaps");
+    });
+}
+
+void UdpDiagHandler::handleUdpListSnaps(){
+    logInfoLine("Listing Snaps.");
+    snapper.listSnaps([me = shared_from_this()](bool success, auto err, std::vector<uint32_t>& foundSeriesids){
+        if(!success){
+            me->logErrorLine("During snapping: ", err);
+            return;
+        }
+        
+        me->logInfoLine("Found ", foundSeriesids.size(), " snaps.");
+        Error err2;
+        udpDiagService.socket().send_to_safe(
+            const_buffers_array(
+                to_buffer_const( Diag::ListSnaps::Response::Id ),
+                asio::buffer(foundSeriesids)
+            ),
+            me->remoteEndpoint,
+            0,
+            err2
+        );
+        if(err2){
+            me->defaultErrorHandler(err2);
+        }
     });
 }
 

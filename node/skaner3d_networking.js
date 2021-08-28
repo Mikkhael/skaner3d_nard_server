@@ -64,6 +64,10 @@ class UdpSocket{
                         response: function(value, rinfo){}
                     }
                 }
+            },
+            listSnaps: {
+                /** @param {string} value  @param {dgram.RemoteInfo} rinfo */
+                response: function(foundSeriesids, rinfo){}
             }
         };
         
@@ -107,6 +111,14 @@ class UdpSocket{
                 case 121: {
                     const message = buffer.slice(1).toString();
                     this.handlers.config.device.get.response(message, rinfo);
+                    break;
+                }
+                case 151: {
+                    const foundSeriesids = [];
+                    for(let i=0; i<(buffer.length-1)/4; i++){
+                        foundSeriesids.push(buffer.readUInt32LE(i*4 + 1));
+                    }
+                    this.handlers.listSnaps.response(foundSeriesids, rinfo);
                     break;
                 }
                 default: {
@@ -182,6 +194,12 @@ class UdpSocket{
     /** @param {string} address @param {number} port */
     sendDeleteAllSnaps(address, port){
         let buffer = new Uint8Array([222]);
+        this.node_socket.send(buffer, port, address);
+    }
+    
+    /** @param {string} address @param {number} port */
+    sendListSnaps(address, port){
+        let buffer = new Uint8Array([150]);
         this.node_socket.send(buffer, port, address);
     }
     

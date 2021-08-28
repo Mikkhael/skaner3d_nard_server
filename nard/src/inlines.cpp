@@ -35,6 +35,9 @@ constexpr DatagramId Diag::Snap::Id;
 
 constexpr DatagramId Diag::DeleteAllSnaps::Id;
 
+constexpr DatagramId Diag::ListSnaps::Request::Id;
+constexpr DatagramId Diag::ListSnaps::Response::Id;
+
 // TRANS
 
 constexpr DatagramId Trans::Echo::Request::Id;

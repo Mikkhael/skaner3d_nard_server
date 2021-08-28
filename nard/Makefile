@@ -19,9 +19,11 @@ INCLUDE_DIR = include
 
 # Additional includes for compilation
 INCLUDES = 
+LIBS     = 
 
 ifeq ($(OS), Windows_NT)
 	INCLUDES += $(BOOSTDIR)
+	LIBS     += $(BOOSTDIR)/stage/lib
 else
 #	Boost has to be in an isolated directory
 	INCLUDES += /usr/include/boostdir
@@ -32,7 +34,7 @@ DEFINES  = BOOST_ERROR_CODE_HEADER_ONLY FAKECAMERA
 
 # Additional flags for compilation and linking
 CXXFLAGS = -std=c++14 -Wall -Wpedantic
-LDFLAGS  = -lboost_filesystem
+LDFLAGS  = -lboost_filesystem -lboost_system
 
 ifeq ($(OS), Windows_NT)
 	LDFLAGS  += -lws2_32 -lwsock32
@@ -202,7 +204,7 @@ endif
 
 # Main compilation function
 $(TARGET) : $(OBJECT_FILES)
-	$(COMPILER) $(CXXFLAGS) $^ -o $(TARGET) $(LDFLAGS)
+	$(COMPILER) $(CXXFLAGS) $(LIBS:%=-L%) $^ -o $(TARGET) $(LDFLAGS)
 
 # Compilation of each translation unit
 $(OBJECTS_DIR)/%.o: $(SOURCE_DIR)/%.cpp

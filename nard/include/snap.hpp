@@ -92,8 +92,6 @@ public:
         snap_impl(callback, snapFile);
     }
     
-    
-    
     template<typename Callback>
     void deleteAllSnaps(Callback callback){
         Error err;
@@ -110,6 +108,28 @@ public:
         callback(true, "");
     }
     
+    template<typename Callback>
+    void listSnaps(Callback callback){
+        Error err;
+        std::vector<uint32_t> foundSeriesids;
+        auto directory = fs::directory_iterator(snapDirectory, err);
+        if(err){
+            callback(true, err, foundSeriesids);
+            return;
+        }
+        for(const auto entry : directory){
+            std::string path = entry.path().filename().string();
+            path.erase(path.begin(), path.begin() + 5);
+            try{
+                uint32_t seriesid = std::stoul(path);
+                foundSeriesids.push_back(seriesid);
+            }catch(...){
+                callback(false, "Invalid file name inside snaps folder", foundSeriesids);
+                return;
+            }
+        }
+        callback(true, err, foundSeriesids);
+    }
 };
 
 extern Snapper snapper;

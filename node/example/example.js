@@ -52,6 +52,11 @@ udp.handlers.config.device.get.response = (value, rinfo) => {
     console.log(`Device config of device ${rinfo.address}:${rinfo.port} is: ${value}`);
 }
 
+/** @param {number[]} foundSeriesids  @param {import("dgram").RemoteInfo} rinfo */
+udp.handlers.listSnaps.response = (foundSeriesids, rinfo) => {
+    console.log(`Snaps on device ${rinfo.address}:${rinfo.port} are: \n${foundSeriesids.join('\n')}`);
+}
+
 /// Tcp
 
 const tcp = new skanernet.TcpConnection();
@@ -198,6 +203,7 @@ function printMenu(){
     console.log("dcdg - Udp Config Device Get | <address> <port>");
     console.log("dr - Udp Reboot | <address> <port>");
     console.log("ds - Udp SNAP | <address> <port> <seriesid>");
+    console.log("dl - Udp List snaps | <address> <port>");
     console.log("dsad - Udp Dlete All Snaps | <address> <port>");
     console.log("tc - TCP Connect to server | <address> <port>");
     console.log("tx - TCP Disconnect");
@@ -246,6 +252,9 @@ function handleOption(prompt, test = false){
     } else if (args[0] == "ds") {
         console.log(`Sending SNAP Request with seriesid=${+args[3]}`);
         udp.sendSnap(args[1], +args[2], +args[3]);
+    } else if (args[0] == "dl") {
+        console.log(`Sending ListSnaps Request`);
+        udp.sendListSnaps(args[1], +args[2]);
     } else if (args[0] == "dsad") {
         console.log(`Sending Delete All Snaps Request`);
         udp.sendDeleteAllSnaps(args[1], +args[2]);
