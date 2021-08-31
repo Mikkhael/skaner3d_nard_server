@@ -34,7 +34,7 @@ DEFINES  = BOOST_ERROR_CODE_HEADER_ONLY FAKECAMERA
 
 # Additional flags for compilation and linking
 CXXFLAGS = -std=c++14 -Wall -Wpedantic
-LDFLAGS  = -lboost_filesystem -lboost_system
+LDFLAGS  = 
 
 ifeq ($(OS), Windows_NT)
 	LDFLAGS  += -lws2_32 -lwsock32
@@ -42,6 +42,10 @@ ifeq ($(OS), Windows_NT)
 else
 	LDFLAGS  += -L/usr/lib/ -lpthread -lstdc++fs
 endif
+
+ifneq ($(MODE), nard)
+	LDFLAGS  += -lboost_filesystem -lboost_system
+endif	
 
 # If 1, every cpp file inside SOURCE_DIR will be compiled
 # IF 0, only the files specified by SOURCE_FILES will be compiled

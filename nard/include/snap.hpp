@@ -71,7 +71,14 @@ public:
     
     void setConfig(const std::string& snapDirectory){
         this->snapDirectory = snapDirectory;
-        fs::create_directories(snapDirectory);
+        
+        #ifdef NARD
+            std::string command = "mkdir -p ";
+            command += snapDirectory;
+            system(command.c_str());
+        #else
+            fs::create_directories(snapDirectory);
+        #endif
     }
     std::string getSnapFilePathForId(uint32_t seriesid){
         return snapDirectory + "/snap_" + std::to_string(seriesid);
@@ -94,7 +101,17 @@ public:
     
     template<typename Callback>
     void deleteAllSnaps(Callback callback){
+        
         Error err;
+        
+        #ifdef NARD
+            std::string command = "rm -rf ";
+            command += snapDirectory;
+            command += "/*";
+            system(command.c_str());
+            callback(true, err);
+        #else
+        
         fs::remove_all(snapDirectory, err);
         if(err){
             callback(false, err);
@@ -106,12 +123,21 @@ public:
             return;
         }
         callback(true, "");
+        
+        #endif
     }
     
     template<typename Callback>
     void listSnaps(Callback callback){
         Error err;
         std::vector<uint32_t> foundSeriesids;
+        
+        #ifdef NARD
+        
+            callback(false, err, foundSeriesids);
+        
+        #else
+        
         auto directory = fs::directory_iterator(snapDirectory, err);
         if(err){
             callback(true, err, foundSeriesids);
@@ -129,6 +155,8 @@ public:
             }
         }
         callback(true, err, foundSeriesids);
+        
+        #endif // NARD
     }
 };
 

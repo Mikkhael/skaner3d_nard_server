@@ -48,7 +48,7 @@ class Logger
         }else{
             asio::post(*ioStrand, [&stream, &debug_stream, args...]{ 
                 fold_ostream(stream, args...);
-                //stream.flush(); // Possibly delete
+                stream.flush(); // Possibly delete
                 
                 #ifdef DEBUG
                     fold_ostream(debug_stream, args...);
